@@ -92,7 +92,6 @@ shopOMS/
 
 ### Prerequisites
 - Node.js 20+
-- pnpm
 - Docker (for Redis)
 - Shopify Partner account
 - Odoo account (free tier)
@@ -102,7 +101,7 @@ shopOMS/
 
 ```bash
 # Install dependencies
-pnpm install
+npm install
 
 # Copy environment variables
 cp .env.example .env.local
@@ -111,10 +110,10 @@ cp .env.example .env.local
 docker-compose up -d
 
 # Run database migrations
-pnpm db:push
+npm run db:push
 
 # Start development server
-pnpm dev
+npm run dev
 ```
 
 ### Environment Variables
