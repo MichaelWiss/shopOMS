@@ -33,3 +33,6 @@ coverage/
 
 # Debug
 .debug/
+
+# Project docs (local only)
+PROJECT.md
