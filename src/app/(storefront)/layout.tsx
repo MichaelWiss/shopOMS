@@ -95,9 +95,6 @@ export default function StorefrontLayout({
               <p className="text-[#666] mt-2">Est:</p>
               <p>2024</p>
             </div>
-            <div className="text-[12px] text-[#1a1a1a]">
-              Cart <ShoppingBag className="inline h-[12px] w-[12px] ml-0.5" strokeWidth={1.5} />
-            </div>
           </div>
           <div className={`${playfair.className} text-[80px] md:text-[140px] lg:text-[180px] tracking-[-0.02em] leading-[0.9]`}>
             Press &amp; Co
