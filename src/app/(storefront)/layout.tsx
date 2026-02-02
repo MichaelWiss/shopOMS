@@ -21,15 +21,15 @@ export default function StorefrontLayout({
           <div className="flex items-start justify-between">
             {/* Logo & Nav */}
             <div className="flex gap-24">
-              <Link href="/demo" className={`${playfair.className} flex flex-col text-[42px] leading-[1.15]`}>
-                <span>Short Talk</span>
-                <span className="text-[#D4A700]">Store</span>
-                <span>Packs</span>
+              <Link href="/" className={`${playfair.className} flex flex-col text-[42px] leading-[1.15]`}>
+                <span>Press &amp; Co</span>
+                <span className="text-[#D4A700]">Cards</span>
+                <span>Samples</span>
               </Link>
               <nav className={`${playfair.className} hidden md:flex flex-col text-[42px] leading-[1.15]`}>
-                <Link href="/demo" className="text-[#D4A700]">About</Link>
-                <Link href="/demo" className="text-[#D4A700]">Services</Link>
-                <Link href="/demo" className="text-[#999]">Search...</Link>
+                <Link href="/about" className="text-[#D4A700]">About</Link>
+                <Link href="/custom" className="text-[#D4A700]">Custom</Link>
+                <Link href="/" className="text-[#999]">Search...</Link>
               </nav>
             </div>
 
@@ -37,12 +37,12 @@ export default function StorefrontLayout({
             <div className="flex items-start gap-12">
               <div className="hidden lg:block text-right text-[11px] text-[#666] leading-[1.8]">
                 <p>Contact:</p>
-                <p>hello@shorttalk.co</p>
-                <p>(+61) 419535991</p>
+                <p>hello@pressandco.com</p>
+                <p>(+61) 400 000 000</p>
                 <p className="mt-3">Instagram:</p>
-                <p>@shorttalk.co</p>
+                <p>@pressandco</p>
               </div>
-              <Link href="/demo/cart" className="flex items-center gap-1.5 text-[13px]">
+              <Link href="/cart" className="flex items-center gap-1.5 text-[13px]">
                 <span>Cart</span>
                 <ShoppingBag className="h-[14px] w-[14px]" strokeWidth={1.5} />
               </Link>
@@ -59,7 +59,7 @@ export default function StorefrontLayout({
         <div className="max-w-[1400px] mx-auto flex flex-col md:flex-row items-start justify-between gap-10">
           <div className="max-w-[440px]">
             <p className="text-[22px] leading-[1.4] tracking-[-0.01em]">
-              Sign up below to receive Short Talk happenings including new products, upcoming events and collaborations. We don't spam, no small talk from us.
+              Join our mailing list for new designs, printing tips, and occasional discounts. We send sparingly.
             </p>
             <form className="mt-4 flex gap-2">
               <input 
@@ -81,26 +81,26 @@ export default function StorefrontLayout({
         <div className="max-w-[1400px] mx-auto">
           <div className="flex flex-wrap justify-between gap-12 mb-16">
             <div className={`${playfair.className} flex flex-col gap-0.5`}>
-              <Link href="#" className="text-[28px] md:text-[32px] italic">About</Link>
-              <Link href="#" className="text-[28px] md:text-[32px] italic">Contact</Link>
-              <Link href="#" className="text-[28px] md:text-[32px] italic">Stockists</Link>
-              <Link href="#" className="text-[28px] md:text-[32px] italic">Talks</Link>
+              <Link href="/about" className="text-[28px] md:text-[32px]">About</Link>
+              <Link href="/contact" className="text-[28px] md:text-[32px]">Contact</Link>
+              <Link href="/faq" className="text-[28px] md:text-[32px]">FAQ</Link>
+              <Link href="/custom" className="text-[28px] md:text-[32px]">Custom Work</Link>
             </div>
             <div className={`${playfair.className}`}>
-              <Link href="#" className="text-[28px] md:text-[32px] italic">Privacy</Link>
+              <Link href="/privacy" className="text-[28px] md:text-[32px]">Privacy</Link>
             </div>
             <div className="text-right text-[11px] text-[#999] leading-[1.8]">
-              <p className="text-[#666]">Design:</p>
-              <p>ettlin Studio</p>
-              <p className="text-[#666] mt-2">Development:</p>
-              <p>@Allan Pooley</p>
+              <p className="text-[#666]">Location:</p>
+              <p>Melbourne, Australia</p>
+              <p className="text-[#666] mt-2">Est:</p>
+              <p>2024</p>
             </div>
             <div className="text-[12px] text-[#1a1a1a]">
               Cart <ShoppingBag className="inline h-[12px] w-[12px] ml-0.5" strokeWidth={1.5} />
             </div>
           </div>
           <div className={`${playfair.className} text-[80px] md:text-[140px] lg:text-[180px] tracking-[-0.02em] leading-[0.9]`}>
-            Short Talk
+            Press &amp; Co
           </div>
         </div>
       </footer>
