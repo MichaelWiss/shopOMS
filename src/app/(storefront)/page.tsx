@@ -92,11 +92,21 @@ export default function HomePage() {
       {/* Lifestyle Images */}
       <section className="max-w-[1400px] mx-auto px-6 py-6">
         <div className="grid md:grid-cols-2 gap-4">
-          <div className="aspect-[4/5] bg-[#E8DCD0] flex items-center justify-center">
-            <span className="text-[#9A8A7A] text-[12px]">Lifestyle Image</span>
+          <div className="aspect-[4/5] relative overflow-hidden bg-[#F5F5F5]">
+            <Image
+              src="/products/11633523.jpg"
+              alt="Letterpress business cards lifestyle"
+              fill
+              className="object-cover"
+            />
           </div>
-          <div className="aspect-[4/5] bg-[#D8E4E8] flex items-center justify-center">
-            <span className="text-[#6A8090] text-[12px]">Lifestyle Image</span>
+          <div className="aspect-[4/5] relative overflow-hidden bg-[#F5F5F5]">
+            <Image
+              src="/products/beautiful-inspirational-quote-message.jpg"
+              alt="Letterpress cards detail"
+              fill
+              className="object-cover"
+            />
           </div>
         </div>
       </section>
