@@ -6,6 +6,7 @@ const products: Record<string, {
   id: number
   title: string
   price: number
+  image: string
   color: string
   textStyle: string
   cardText: string
@@ -26,6 +27,7 @@ const products: Record<string, {
     id: 1,
     title: 'The Guildsman',
     price: 90,
+    image: '/products/tp204-businesscard-04-ps.jpg',
     color: 'bg-[#F5F0E8]',
     textStyle: 'font-serif text-[#2A2A2A] text-[14px]',
     cardText: 'John Smith\nCreative Director',
@@ -57,6 +59,7 @@ const products: Record<string, {
     id: 2,
     title: 'The Modernist',
     price: 95,
+    image: '/products/v900-sasi-businesscard-01.jpg',
     color: 'bg-[#FFFFFF] border border-[#E5E5E5]',
     textStyle: 'font-sans text-[#1a1a1a] text-[12px] tracking-widest uppercase',
     cardText: 'JANE DOE\nARCHITECT',
@@ -88,6 +91,7 @@ const products: Record<string, {
     id: 3,
     title: 'The Artisan',
     price: 110,
+    image: '/products/10591621.jpg',
     color: 'bg-[#F8F5F0]',
     textStyle: 'font-serif italic text-[#1A365D] text-[14px]',
     cardText: 'Emma Rose\nFloral Design',
@@ -119,6 +123,7 @@ const products: Record<string, {
     id: 4,
     title: 'The Minimalist',
     price: 85,
+    image: '/products/3285075.jpg',
     color: 'bg-[#FAFAFA]',
     textStyle: 'font-sans text-[#333] text-[11px] tracking-wider',
     cardText: 'M. CHEN\nSTUDIO',
@@ -160,10 +165,14 @@ export default async function ProductPage({ params }: { params: Promise<{ id: st
       <div className="grid md:grid-cols-2 gap-10 md:gap-16">
         {/* Product Image */}
         <div>
-          <div className={`${product.color} aspect-[3/4] flex items-center justify-center p-12`}>
-            <span className={`whitespace-pre-line text-center leading-relaxed ${product.textStyle}`}>
-              {product.cardText}
-            </span>
+          <div className="aspect-[3/4] relative overflow-hidden bg-[#F5F5F5]">
+            <Image
+              src={product.image}
+              alt={product.title}
+              fill
+              className="object-cover"
+              priority
+            />
           </div>
         </div>
 
@@ -294,10 +303,13 @@ export default async function ProductPage({ params }: { params: Promise<{ id: st
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-5">
           {Object.values(products).filter(p => p.id !== product.id).slice(0, 4).map(p => (
             <Link key={p.id} href={`/product/${p.id}`} className="group block">
-              <div className={`${p.color} aspect-[3/4] mb-3 flex items-center justify-center p-8`}>
-                <span className={`whitespace-pre-line text-center leading-relaxed ${p.textStyle}`}>
-                  {p.cardText}
-                </span>
+              <div className="aspect-[3/4] mb-3 relative overflow-hidden bg-[#F5F5F5]">
+                <Image
+                  src={p.image}
+                  alt={p.title}
+                  fill
+                  className="object-cover group-hover:scale-105 transition-transform duration-300"
+                />
               </div>
               <h3 className="text-[13px] tracking-[0.01em] text-[#1a1a1a] uppercase mt-2">{p.title}</h3>
               <p className="text-[13px] text-[#1a1a1a]">${p.price}.00</p>
