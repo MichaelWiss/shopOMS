@@ -1,3 +1,4 @@
+import Image from 'next/image'
 import Link from 'next/link'
 import { Playfair_Display } from 'next/font/google'
 
@@ -7,9 +8,9 @@ const playfair = Playfair_Display({
 })
 
 const samplePacks = [
-  { id: 'sample-1', title: 'Classic Sample Pack', price: 15, color: 'bg-[#E8E4DC]', textStyle: 'font-serif text-[#4A4A4A] text-[11px]', cardText: '6 Card\nSamples', tags: ['SAMPLES'], description: 'A curated selection of our classic letterpress designs on premium cotton paper.' },
-  { id: 'sample-2', title: 'Modern Sample Pack', price: 15, color: 'bg-[#F0F0F0]', textStyle: 'font-sans text-[#333] text-[10px] uppercase tracking-wider', cardText: '6 CARD\nSAMPLES', tags: ['SAMPLES'], description: 'Clean, contemporary designs featuring minimal typography and geometric elements.' },
-  { id: 'sample-3', title: 'Complete Sample Set', price: 25, color: 'bg-[#F5F0E8]', textStyle: 'font-serif text-[#5A5A5A] text-[11px]', cardText: 'All 12\nDesigns', tags: ['SAMPLES', 'COMPLETE'], description: 'Every design in our collection, perfect for those who want to see and feel all options.' },
+  { id: 'sample-1', title: 'Classic Sample Pack', price: 15, image: '/products/Stack-Letterpress-Business-Cards-Mockup.jpg', tags: ['SAMPLES'], description: 'A curated selection of our classic letterpress designs on premium cotton paper.' },
+  { id: 'sample-2', title: 'Modern Sample Pack', price: 15, image: '/products/tp204-businesscard-04-ps.jpg', tags: ['SAMPLES'], description: 'Clean, contemporary designs featuring minimal typography and geometric elements.' },
+  { id: 'sample-3', title: 'Complete Sample Set', price: 25, image: '/products/v900-sasi-businesscard-01.jpg', tags: ['SAMPLES', 'COMPLETE'], description: 'Every design in our collection, perfect for those who want to see and feel all options.' },
 ]
 
 function SampleCard({ 
@@ -20,18 +21,19 @@ function SampleCard({
     title: string
     price: number
     tags: string[]
-    color: string
-    textStyle: string
-    cardText: string
+    image: string
     description: string
   }
 }) {
   return (
     <Link href={`/product/${product.id}`} className="group block">
-      <div className={`${product.color} aspect-[3/4] mb-3 flex items-center justify-center p-8`}>
-        <span className={`whitespace-pre-line text-center leading-relaxed ${product.textStyle}`}>
-          {product.cardText}
-        </span>
+      <div className="aspect-[3/4] mb-3 relative overflow-hidden bg-[#f5f5f5]">
+        <Image
+          src={product.image}
+          alt={product.title}
+          fill
+          className="object-cover group-hover:scale-105 transition-transform duration-300"
+        />
       </div>
       <h3 className="text-[13px] tracking-[0.01em] text-[#1a1a1a] uppercase mt-2">{product.title}</h3>
       <p className="text-[13px] text-[#1a1a1a]">A${product.price}.00</p>

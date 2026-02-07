@@ -23,9 +23,9 @@ const allCards = [
 ]
 
 const samplePacks = [
-  { id: 'sample-1', title: 'Classic Sample Pack', price: 15, color: 'bg-[#E8E4DC]', textStyle: 'font-serif text-[#4A4A4A] text-[11px]', cardText: '6 Card\nSamples', tags: ['SAMPLES'] },
-  { id: 'sample-2', title: 'Modern Sample Pack', price: 15, color: 'bg-[#F0F0F0]', textStyle: 'font-sans text-[#333] text-[10px] uppercase tracking-wider', cardText: '6 CARD\nSAMPLES', tags: ['SAMPLES'] },
-  { id: 'sample-3', title: 'Complete Sample Set', price: 25, color: 'bg-[#F5F0E8]', textStyle: 'font-serif text-[#5A5A5A] text-[11px]', cardText: 'All 12\nDesigns', tags: ['SAMPLES', 'COMPLETE'] },
+  { id: 'sample-1', title: 'Classic Sample Pack', price: 15, image: '/products/Stack-Letterpress-Business-Cards-Mockup.jpg', color: 'bg-[#E8E4DC]', textStyle: 'font-serif text-[#4A4A4A] text-[11px]', cardText: '6 Card\nSamples', tags: ['SAMPLES'] },
+  { id: 'sample-2', title: 'Modern Sample Pack', price: 15, image: '/products/close-up-blank-business-cards-grey-background.jpg', color: 'bg-[#F0F0F0]', textStyle: 'font-sans text-[#333] text-[10px] uppercase tracking-wider', cardText: '6 CARD\nSAMPLES', tags: ['SAMPLES'] },
+  { id: 'sample-3', title: 'Complete Sample Set', price: 25, image: '/products/2838953.jpg', color: 'bg-[#F5F0E8]', textStyle: 'font-serif text-[#5A5A5A] text-[11px]', cardText: 'All 12\nDesigns', tags: ['SAMPLES', 'COMPLETE'] },
 ]
 
 function ProductCard({ 
