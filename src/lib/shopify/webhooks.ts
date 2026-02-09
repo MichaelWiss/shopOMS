@@ -1,8 +1,6 @@
 import crypto from 'crypto'
 import { shopifyEnv } from '@/lib/env'
 
-const SHOPIFY_WEBHOOK_SECRET = shopifyEnv.SHOPIFY_WEBHOOK_SECRET
-
 /**
  * Verify Shopify webhook signature (HMAC-SHA256)
  */
@@ -16,7 +14,7 @@ export function verifyWebhookSignature(
 
   const body = typeof rawBody === 'string' ? rawBody : rawBody.toString('utf8')
   
-  const hmac = crypto.createHmac('sha256', SHOPIFY_WEBHOOK_SECRET)
+  const hmac = crypto.createHmac('sha256', shopifyEnv.SHOPIFY_WEBHOOK_SECRET)
   hmac.update(body, 'utf8')
   const computedSignature = hmac.digest('base64')
 

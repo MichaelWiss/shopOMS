@@ -1,9 +1,5 @@
 import { shopifyEnv } from '@/lib/env'
 
-const SHOPIFY_STORE_DOMAIN = shopifyEnv.SHOPIFY_STORE_DOMAIN
-const SHOPIFY_STOREFRONT_ACCESS_TOKEN = shopifyEnv.SHOPIFY_STOREFRONT_ACCESS_TOKEN
-const SHOPIFY_API_VERSION = shopifyEnv.SHOPIFY_API_VERSION
-
 interface GraphQLResponse<T> {
   data?: T
   errors?: Array<{ message: string }>
@@ -13,13 +9,15 @@ export async function shopifyStorefrontFetch<T>(
   query: string,
   variables?: Record<string, unknown>
 ): Promise<T> {
-  const endpoint = `https://${SHOPIFY_STORE_DOMAIN}/api/${SHOPIFY_API_VERSION}/graphql.json`
+  const domain = shopifyEnv.SHOPIFY_STORE_DOMAIN
+  const apiVersion = shopifyEnv.SHOPIFY_API_VERSION
+  const endpoint = `https://${domain}/api/${apiVersion}/graphql.json`
 
   const response = await fetch(endpoint, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
-      'X-Shopify-Storefront-Access-Token': SHOPIFY_STOREFRONT_ACCESS_TOKEN,
+      'X-Shopify-Storefront-Access-Token': shopifyEnv.SHOPIFY_STOREFRONT_ACCESS_TOKEN,
     },
     body: JSON.stringify({ query, variables }),
   })
@@ -42,19 +40,19 @@ export async function shopifyStorefrontFetch<T>(
 }
 
 // Admin API client for webhook management and order updates
-const SHOPIFY_ADMIN_ACCESS_TOKEN = shopifyEnv.SHOPIFY_ADMIN_ACCESS_TOKEN
-
 export async function shopifyAdminFetch<T>(
   query: string,
   variables?: Record<string, unknown>
 ): Promise<T> {
-  const endpoint = `https://${SHOPIFY_STORE_DOMAIN}/admin/api/${SHOPIFY_API_VERSION}/graphql.json`
+  const domain = shopifyEnv.SHOPIFY_STORE_DOMAIN
+  const apiVersion = shopifyEnv.SHOPIFY_API_VERSION
+  const endpoint = `https://${domain}/admin/api/${apiVersion}/graphql.json`
 
   const response = await fetch(endpoint, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
-      'X-Shopify-Access-Token': SHOPIFY_ADMIN_ACCESS_TOKEN,
+      'X-Shopify-Access-Token': shopifyEnv.SHOPIFY_ADMIN_ACCESS_TOKEN,
     },
     body: JSON.stringify({ query, variables }),
   })

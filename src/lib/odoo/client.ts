@@ -1,27 +1,26 @@
 import xmlrpc from 'xmlrpc'
 import { odooEnv } from '@/lib/env'
 
-const ODOO_URL = odooEnv.ODOO_URL
-const ODOO_DB = odooEnv.ODOO_DB
-const ODOO_USERNAME = odooEnv.ODOO_USERNAME
-const ODOO_API_KEY = odooEnv.ODOO_API_KEY
+// Lazy-initialized XML-RPC clients (deferred until first use)
+let commonClient: ReturnType<typeof xmlrpc.createClient> | null = null
+let objectClient: ReturnType<typeof xmlrpc.createClient> | null = null
 
-// Parse URL for XML-RPC clients
-const url = new URL(ODOO_URL)
-const isSecure = url.protocol === 'https:'
-const port = url.port ? parseInt(url.port) : (isSecure ? 443 : 80)
+function getClients() {
+  if (!commonClient || !objectClient) {
+    const url = new URL(odooEnv.ODOO_URL)
+    const isSecure = url.protocol === 'https:'
+    const port = url.port ? parseInt(url.port) : (isSecure ? 443 : 80)
 
-const createClient = (path: string) => {
-  const options = {
-    host: url.hostname,
-    port,
-    path,
+    const makeClient = (path: string) => {
+      const options = { host: url.hostname, port, path }
+      return isSecure ? xmlrpc.createSecureClient(options) : xmlrpc.createClient(options)
+    }
+
+    commonClient = makeClient('/xmlrpc/2/common')
+    objectClient = makeClient('/xmlrpc/2/object')
   }
-  return isSecure ? xmlrpc.createSecureClient(options) : xmlrpc.createClient(options)
+  return { commonClient, objectClient }
 }
-
-const commonClient = createClient('/xmlrpc/2/common')
-const objectClient = createClient('/xmlrpc/2/object')
 
 // Cache for UID
 let cachedUid: number | null = null
@@ -34,8 +33,9 @@ export async function authenticate(): Promise<number> {
     return cachedUid
   }
 
+  const { commonClient } = getClients()
   return new Promise((resolve, reject) => {
-    commonClient.methodCall('authenticate', [ODOO_DB, ODOO_USERNAME, ODOO_API_KEY, {}], (error: any, uid: any) => {
+    commonClient.methodCall('authenticate', [odooEnv.ODOO_DB, odooEnv.ODOO_USERNAME, odooEnv.ODOO_API_KEY, {}], (error: any, uid: any) => {
       if (error) {
         reject(new Error(`Odoo authentication failed: ${error?.message || error}`))
         return
@@ -60,11 +60,12 @@ export async function execute<T>(
   kwargs: Record<string, unknown> = {}
 ): Promise<T> {
   const uid = await authenticate()
+  const { objectClient } = getClients()
 
   return new Promise((resolve, reject) => {
     objectClient.methodCall(
       'execute_kw',
-      [ODOO_DB, uid, ODOO_API_KEY, model, method, args, kwargs],
+      [odooEnv.ODOO_DB, uid, odooEnv.ODOO_API_KEY, model, method, args, kwargs],
       (error: any, result: any) => {
         if (error) {
           reject(new Error(`Odoo execute failed: ${error?.message || error}`))

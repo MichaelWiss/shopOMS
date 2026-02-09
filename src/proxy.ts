@@ -6,7 +6,7 @@ import { NextRequest, NextResponse } from 'next/server'
  * - Admin pages (/admin/*) require the ADMIN_API_KEY cookie
  * - API routes (/api/sync/*, /api/health) require Bearer token or x-api-key header
  */
-export function middleware(request: NextRequest) {
+export function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl
 
   // --- Protect API routes ---
