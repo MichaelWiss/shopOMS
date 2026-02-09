@@ -1,6 +1,7 @@
 import crypto from 'crypto'
+import { shopifyEnv } from '@/lib/env'
 
-const SHOPIFY_WEBHOOK_SECRET = process.env.SHOPIFY_WEBHOOK_SECRET!
+const SHOPIFY_WEBHOOK_SECRET = shopifyEnv.SHOPIFY_WEBHOOK_SECRET
 
 /**
  * Verify Shopify webhook signature (HMAC-SHA256)

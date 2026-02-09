@@ -1,6 +1,8 @@
-const SHOPIFY_STORE_DOMAIN = process.env.SHOPIFY_STORE_DOMAIN!
-const SHOPIFY_STOREFRONT_ACCESS_TOKEN = process.env.SHOPIFY_STOREFRONT_ACCESS_TOKEN!
-const SHOPIFY_API_VERSION = process.env.SHOPIFY_API_VERSION || '2024-01'
+import { shopifyEnv } from '@/lib/env'
+
+const SHOPIFY_STORE_DOMAIN = shopifyEnv.SHOPIFY_STORE_DOMAIN
+const SHOPIFY_STOREFRONT_ACCESS_TOKEN = shopifyEnv.SHOPIFY_STOREFRONT_ACCESS_TOKEN
+const SHOPIFY_API_VERSION = shopifyEnv.SHOPIFY_API_VERSION
 
 interface GraphQLResponse<T> {
   data?: T
@@ -40,7 +42,7 @@ export async function shopifyStorefrontFetch<T>(
 }
 
 // Admin API client for webhook management and order updates
-const SHOPIFY_ADMIN_ACCESS_TOKEN = process.env.SHOPIFY_ADMIN_ACCESS_TOKEN!
+const SHOPIFY_ADMIN_ACCESS_TOKEN = shopifyEnv.SHOPIFY_ADMIN_ACCESS_TOKEN
 
 export async function shopifyAdminFetch<T>(
   query: string,

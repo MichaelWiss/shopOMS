@@ -1,18 +1,29 @@
-import { createClient } from '@supabase/supabase-js'
+import { createClient, SupabaseClient } from '@supabase/supabase-js'
+import { supabaseEnv } from '@/lib/env'
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || ''
-const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || ''
-
-// Only create client if we have valid credentials
-export const supabase = supabaseUrl && supabaseAnonKey 
-  ? createClient(supabaseUrl, supabaseAnonKey)
-  : null
-
-// Server-side client with service role (for API routes)
-export function createServerClient() {
-  const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY
-  if (!supabaseUrl || !supabaseServiceKey) {
-    throw new Error('Supabase environment variables not configured')
-  }
-  return createClient(supabaseUrl, supabaseServiceKey)
+/**
+ * Browser-safe Supabase client (uses anon key).
+ * Throws if env vars are missing.
+ */
+export function getSupabaseClient() {
+  return createClient(supabaseEnv.NEXT_PUBLIC_SUPABASE_URL, supabaseEnv.NEXT_PUBLIC_SUPABASE_ANON_KEY)
 }
+
+/**
+ * Server-side Supabase client with service role (for API routes / workers).
+ * Cached per-process to avoid connection overhead.
+ */
+let serverClient: SupabaseClient | null = null
+
+export function createServerClient() {
+  if (!serverClient) {
+    serverClient = createClient(
+      supabaseEnv.NEXT_PUBLIC_SUPABASE_URL,
+      supabaseEnv.SUPABASE_SERVICE_ROLE_KEY
+    )
+  }
+  return serverClient
+}
+
+/** @deprecated Use getSupabaseClient() instead */
+export const supabase = null

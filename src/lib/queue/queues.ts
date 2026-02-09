@@ -1,12 +1,24 @@
 import { Queue, Worker, Job } from 'bullmq'
 import Redis from 'ioredis'
+import { redisEnv } from '@/lib/env'
 
-const REDIS_URL = process.env.REDIS_URL || 'redis://localhost:6379'
+// Create Redis connection lazily
+let _redis: Redis | null = null
 
-// Create Redis connection
-export const redis = new Redis(REDIS_URL, {
-  maxRetriesPerRequest: null,
-})
+export function getRedis(): Redis {
+  if (!_redis) {
+    _redis = new Redis(redisEnv.REDIS_URL, {
+      maxRetriesPerRequest: null,
+    })
+    _redis.on('error', (err) => {
+      console.error('[Redis] Connection error:', err.message)
+    })
+  }
+  return _redis
+}
+
+/** @deprecated Use getRedis() instead */
+export const redis = null as unknown as Redis
 
 // Queue names
 export const QUEUE_NAMES = {
@@ -38,65 +50,82 @@ export interface FulfillmentSyncJob {
   webhookId: string
 }
 
-// Create queues
-export const orderSyncQueue = new Queue<OrderSyncJob>(QUEUE_NAMES.ORDER_SYNC, {
-  connection: redis,
-  defaultJobOptions: {
-    attempts: 5,
-    backoff: {
-      type: 'exponential',
-      delay: 1000,
-    },
-    removeOnComplete: {
-      count: 1000, // Keep last 1000 completed jobs
-    },
-    removeOnFail: {
-      count: 5000, // Keep last 5000 failed jobs for debugging
-    },
+// Shared default job options for memory management
+const defaultRetentionOptions = {
+  removeOnComplete: {
+    count: 1000, // Keep last 1000 completed jobs
   },
-})
+  removeOnFail: {
+    count: 5000, // Keep last 5000 failed jobs for debugging
+  },
+}
 
-export const inventorySyncQueue = new Queue<InventorySyncJob>(QUEUE_NAMES.INVENTORY_SYNC, {
-  connection: redis,
-  defaultJobOptions: {
-    attempts: 3,
-    backoff: {
-      type: 'exponential',
-      delay: 500,
-    },
-  },
-})
+// Lazy queue creation (avoids Redis connection at module import time)
+let _orderSyncQueue: Queue<OrderSyncJob> | null = null
+let _inventorySyncQueue: Queue<InventorySyncJob> | null = null
+let _fulfillmentSyncQueue: Queue<FulfillmentSyncJob> | null = null
 
-export const fulfillmentSyncQueue = new Queue<FulfillmentSyncJob>(QUEUE_NAMES.FULFILLMENT_SYNC, {
-  connection: redis,
-  defaultJobOptions: {
-    attempts: 5,
-    backoff: {
-      type: 'exponential',
-      delay: 1000,
-    },
-  },
-})
+export function getOrderSyncQueue(): Queue<OrderSyncJob> {
+  if (!_orderSyncQueue) {
+    _orderSyncQueue = new Queue<OrderSyncJob>(QUEUE_NAMES.ORDER_SYNC, {
+      connection: getRedis(),
+      defaultJobOptions: {
+        attempts: 5,
+        backoff: { type: 'exponential', delay: 1000 },
+        ...defaultRetentionOptions,
+      },
+    })
+  }
+  return _orderSyncQueue
+}
+
+export function getInventorySyncQueue(): Queue<InventorySyncJob> {
+  if (!_inventorySyncQueue) {
+    _inventorySyncQueue = new Queue<InventorySyncJob>(QUEUE_NAMES.INVENTORY_SYNC, {
+      connection: getRedis(),
+      defaultJobOptions: {
+        attempts: 3,
+        backoff: { type: 'exponential', delay: 500 },
+        ...defaultRetentionOptions,
+      },
+    })
+  }
+  return _inventorySyncQueue
+}
+
+export function getFulfillmentSyncQueue(): Queue<FulfillmentSyncJob> {
+  if (!_fulfillmentSyncQueue) {
+    _fulfillmentSyncQueue = new Queue<FulfillmentSyncJob>(QUEUE_NAMES.FULFILLMENT_SYNC, {
+      connection: getRedis(),
+      defaultJobOptions: {
+        attempts: 5,
+        backoff: { type: 'exponential', delay: 1000 },
+        ...defaultRetentionOptions,
+      },
+    })
+  }
+  return _fulfillmentSyncQueue
+}
 
 // Helper to add jobs
 export async function addOrderSyncJob(data: OrderSyncJob, priority?: number) {
-  return orderSyncQueue.add('order-sync', data, { priority })
+  return getOrderSyncQueue().add('order-sync', data, { priority })
 }
 
 export async function addInventorySyncJob(data: InventorySyncJob) {
-  return inventorySyncQueue.add('inventory-sync', data)
+  return getInventorySyncQueue().add('inventory-sync', data)
 }
 
 export async function addFulfillmentSyncJob(data: FulfillmentSyncJob) {
-  return fulfillmentSyncQueue.add('fulfillment-sync', data)
+  return getFulfillmentSyncQueue().add('fulfillment-sync', data)
 }
 
 // Queue health check
 export async function getQueueStats() {
   const [orderCounts, inventoryCounts, fulfillmentCounts] = await Promise.all([
-    orderSyncQueue.getJobCounts(),
-    inventorySyncQueue.getJobCounts(),
-    fulfillmentSyncQueue.getJobCounts(),
+    getOrderSyncQueue().getJobCounts(),
+    getInventorySyncQueue().getJobCounts(),
+    getFulfillmentSyncQueue().getJobCounts(),
   ])
 
   return {

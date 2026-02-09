@@ -1,9 +1,10 @@
 import xmlrpc from 'xmlrpc'
+import { odooEnv } from '@/lib/env'
 
-const ODOO_URL = process.env.ODOO_URL || 'http://localhost:8069'
-const ODOO_DB = process.env.ODOO_DB || ''
-const ODOO_USERNAME = process.env.ODOO_USERNAME || ''
-const ODOO_API_KEY = process.env.ODOO_API_KEY || ''
+const ODOO_URL = odooEnv.ODOO_URL
+const ODOO_DB = odooEnv.ODOO_DB
+const ODOO_USERNAME = odooEnv.ODOO_USERNAME
+const ODOO_API_KEY = odooEnv.ODOO_API_KEY
 
 // Parse URL for XML-RPC clients
 const url = new URL(ODOO_URL)

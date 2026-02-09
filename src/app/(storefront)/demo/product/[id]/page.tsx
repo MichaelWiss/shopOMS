@@ -3,12 +3,7 @@
 import { useState } from 'react'
 import Link from 'next/link'
 import { ChevronLeft, Minus, Plus } from 'lucide-react'
-import { Playfair_Display } from 'next/font/google'
-
-const playfair = Playfair_Display({ 
-  subsets: ['latin'],
-  weight: ['400', '500'],
-})
+import { playfair } from '@/lib/fonts'
 
 // Bespoke letterpress card products
 const products: Record<string, {

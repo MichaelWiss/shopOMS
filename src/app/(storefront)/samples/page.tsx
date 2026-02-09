@@ -1,53 +1,6 @@
-import Image from 'next/image'
-import Link from 'next/link'
-import { Playfair_Display } from 'next/font/google'
-
-const playfair = Playfair_Display({ 
-  subsets: ['latin'],
-  weight: ['400', '500'],
-})
-
-const samplePacks = [
-  { id: 'sample-1', title: 'Classic Sample Pack', price: 15, image: '/products/Stack-Letterpress-Business-Cards-Mockup.jpg', tags: ['SAMPLES'], description: 'A curated selection of our classic letterpress designs on premium cotton paper.' },
-  { id: 'sample-2', title: 'Modern Sample Pack', price: 15, image: '/products/tp204-businesscard-04-ps.jpg', tags: ['SAMPLES'], description: 'Clean, contemporary designs featuring minimal typography and geometric elements.' },
-  { id: 'sample-3', title: 'Complete Sample Set', price: 25, image: '/products/v900-sasi-businesscard-01.jpg', tags: ['SAMPLES', 'COMPLETE'], description: 'Every design in our collection, perfect for those who want to see and feel all options.' },
-]
-
-function SampleCard({ 
-  product 
-}: { 
-  product: {
-    id: string
-    title: string
-    price: number
-    tags: string[]
-    image: string
-    description: string
-  }
-}) {
-  return (
-    <Link href={`/product/${product.id}`} className="group block">
-      <div className="aspect-[3/4] mb-3 relative overflow-hidden bg-[#f5f5f5]">
-        <Image
-          src={product.image}
-          alt={product.title}
-          fill
-          className="object-cover group-hover:scale-105 transition-transform duration-300"
-        />
-      </div>
-      <h3 className="text-[13px] tracking-[0.01em] text-[#1a1a1a] uppercase mt-2">{product.title}</h3>
-      <p className="text-[13px] text-[#1a1a1a]">A${product.price}.00</p>
-      <p className="text-[13px] text-[#1a1a1a]/60 mt-2">{product.description}</p>
-      <div className="flex flex-wrap gap-1.5 mt-2">
-        {product.tags.map((tag) => (
-          <span key={tag} className="text-[10px] text-[#1a1a1a]/70 uppercase tracking-[0.03em] border border-[#1a1a1a]/30 px-2 py-0.5">
-            {tag}
-          </span>
-        ))}
-      </div>
-    </Link>
-  )
-}
+import { playfair } from '@/lib/fonts'
+import { ProductCard } from '@/components/ProductCard'
+import { samplePacks } from '@/lib/data/products'
 
 export default function SamplesPage() {
   return (
@@ -63,7 +16,7 @@ export default function SamplesPage() {
       {/* Product Grid */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6 md:gap-8 mb-16">
         {samplePacks.map(pack => (
-          <SampleCard key={pack.id} product={pack} />
+          <ProductCard key={pack.id} product={{ ...pack, description: pack.sampleDescription }} />
         ))}
       </div>
 

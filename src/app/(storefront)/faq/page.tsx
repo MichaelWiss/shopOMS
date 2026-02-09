@@ -1,13 +1,8 @@
 'use client'
 
 import { useState } from 'react'
-import { Playfair_Display } from 'next/font/google'
+import { playfair } from '@/lib/fonts'
 import { Plus, Minus } from 'lucide-react'
-
-const playfair = Playfair_Display({ 
-  subsets: ['latin'],
-  weight: ['400', '500'],
-})
 
 const faqs = [
   {

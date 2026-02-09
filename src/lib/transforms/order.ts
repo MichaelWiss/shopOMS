@@ -48,20 +48,28 @@ export async function transformShopifyOrderToOdoo(
 
   const partner = await getOrCreatePartner(email, customerName, shopifyCustomerId, addressData)
 
-  // Transform line items
-  const orderLines = await Promise.all(
+  // Transform line items (filter out items with no Odoo product mapping)
+  const resolvedLines = await Promise.all(
     shopifyOrder.line_items.map(async (item) => {
       // Try to find product by SKU in Odoo
       const odooProduct = item.sku ? await findProductBySku(item.sku) : null
 
-      const originalPrice = parseFloat(item.price)
-      const totalDiscount = parseFloat(item.total_discount)
-      const discountPercent = originalPrice > 0 
+      if (!odooProduct?.id) {
+        console.warn(
+          `[OrderTransform] No Odoo product found for SKU "${item.sku}" (Shopify item: ${item.title}, ID: ${item.id}). ` +
+          `This line item will be skipped. Ensure the product is mapped in Odoo.`
+        )
+        return null
+      }
+
+      const originalPrice = parseFloat(item.price) || 0
+      const totalDiscount = parseFloat(item.total_discount) || 0
+      const discountPercent = originalPrice > 0 && item.quantity > 0
         ? (totalDiscount / (originalPrice * item.quantity)) * 100 
         : 0
 
       return {
-        productId: odooProduct?.id || 1, // Fallback to generic product if not mapped
+        productId: odooProduct.id,
         name: item.title,
         quantity: item.quantity,
         priceUnit: originalPrice,
@@ -70,8 +78,26 @@ export async function transformShopifyOrderToOdoo(
     })
   )
 
+  // Filter out line items that couldn't be mapped to Odoo products
+  const orderLines = resolvedLines.filter(
+    (line): line is NonNullable<typeof line> => line !== null
+  )
+
+  if (orderLines.length === 0) {
+    throw new Error(
+      `[OrderTransform] No line items could be mapped to Odoo products for order ${shopifyOrder.name}. ` +
+      `Ensure product SKUs are configured in Odoo.`
+    )
+  }
+
+  if (!partner.id) {
+    throw new Error(
+      `[OrderTransform] Failed to resolve Odoo partner ID for order ${shopifyOrder.name} (email: ${email}).`
+    )
+  }
+
   return {
-    partnerId: partner.id!,
+    partnerId: partner.id,
     orderLines,
     metadata: {
       shopifyOrderId: shopifyOrder.admin_graphql_api_id || shopifyOrder.id.toString(),

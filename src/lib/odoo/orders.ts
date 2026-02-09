@@ -1,4 +1,4 @@
-import { create, searchRead, write } from './client'
+import { create, execute, searchRead, write } from './client'
 import type { OdooSaleOrder, OdooSaleOrderLine } from '@/types/odoo'
 
 const MODEL = 'sale.order'
@@ -78,17 +78,21 @@ export async function findOrderByShopifyId(shopifyOrderId: string): Promise<Odoo
 }
 
 /**
- * Confirm a sale order (draft -> sale)
+ * Confirm a sale order (draft -> sale).
+ * Uses Odoo's action_confirm RPC method to trigger proper business logic
+ * (inventory reservation, invoicing workflows, etc.).
  */
 export async function confirmSaleOrder(orderId: number): Promise<boolean> {
-  return write(MODEL, [orderId], { state: 'sale' })
+  return execute<boolean>(MODEL, 'action_confirm', [[orderId]])
 }
 
 /**
- * Cancel a sale order
+ * Cancel a sale order.
+ * Uses Odoo's action_cancel RPC method to trigger proper business logic
+ * (inventory unreservation, cancellation workflows, etc.).
  */
 export async function cancelSaleOrder(orderId: number): Promise<boolean> {
-  return write(MODEL, [orderId], { state: 'cancel' })
+  return execute<boolean>(MODEL, 'action_cancel', [[orderId]])
 }
 
 /**
