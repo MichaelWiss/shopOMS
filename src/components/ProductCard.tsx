@@ -36,14 +36,16 @@ export function ProductCard({ product, description }: { product: ShopifyProduct;
         <p className="text-[13px] text-[#1a1a1a]/60 mt-2">{description}</p>
       )}
       <div className="flex flex-wrap gap-1.5 mt-2">
-        {product.tags.map((tag) => (
-          <span
-            key={tag}
-            className="text-[10px] text-[#1a1a1a]/70 uppercase tracking-[0.03em] border border-[#1a1a1a]/30 px-2 py-0.5"
-          >
-            {tag}
-          </span>
-        ))}
+        {product.tags
+          .filter((tag) => tag !== 'live-seed')
+          .map((tag) => (
+            <span
+              key={tag}
+              className="text-[10px] text-[#1a1a1a]/70 uppercase tracking-[0.03em] border border-[#1a1a1a]/30 px-2 py-0.5"
+            >
+              {tag}
+            </span>
+          ))}
       </div>
     </Link>
   )
