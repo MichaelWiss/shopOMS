@@ -24,6 +24,3 @@ export function createServerClient() {
   }
   return serverClient
 }
-
-/** @deprecated Use getSupabaseClient() instead */
-export const supabase = null

@@ -1,4 +1,4 @@
-import { Queue, Worker, Job } from 'bullmq'
+import { Queue } from 'bullmq'
 import Redis from 'ioredis'
 import { redisEnv } from '@/lib/env'
 
@@ -16,9 +16,6 @@ export function getRedis(): Redis {
   }
   return _redis
 }
-
-/** @deprecated Use getRedis() instead */
-export const redis = null as unknown as Redis
 
 // Queue names
 export const QUEUE_NAMES = {

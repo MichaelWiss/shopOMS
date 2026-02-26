@@ -151,6 +151,28 @@ export async function getProductById(id: string): Promise<ShopifyProduct | null>
   return data.product
 }
 
+export async function getProductsByType(productType: string, first: number = 50): Promise<ShopifyProduct[]> {
+  const query = `
+    ${PRODUCT_FRAGMENT}
+    query GetProductsByType($query: String!, $first: Int!) {
+      products(first: $first, query: $query) {
+        edges {
+          node {
+            ...ProductFields
+          }
+        }
+      }
+    }
+  `
+
+  const data = await shopifyStorefrontFetch<ProductsResponse>(query, {
+    query: `product_type:"${productType}"`,
+    first,
+  })
+
+  return data.products.edges.map(edge => edge.node)
+}
+
 export async function searchProducts(searchQuery: string, first: number = 20): Promise<ShopifyProduct[]> {
   const query = `
     ${PRODUCT_FRAGMENT}

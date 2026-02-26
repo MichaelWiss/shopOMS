@@ -1,10 +1,12 @@
 import { playfair } from '@/lib/fonts'
 import { ProductCard } from '@/components/ProductCard'
-import { featuredCards, allCards } from '@/lib/data/products'
+import { getProductsByType } from '@/lib/shopify/products'
 
-const allCardsCombined = [...featuredCards, ...allCards]
+export const revalidate = 60
 
-export default function CardsPage() {
+export default async function CardsPage() {
+  const cards = await getProductsByType('Business Card')
+
   return (
     <div className="px-6 py-10">
       {/* Header */}
@@ -17,7 +19,7 @@ export default function CardsPage() {
       
       {/* Product Grid */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6">
-        {allCardsCombined.map(card => (
+        {cards.map(card => (
           <ProductCard key={card.id} product={card} />
         ))}
       </div>

@@ -1,4 +1,5 @@
 export { shopifyStorefrontFetch, shopifyAdminFetch } from './client'
+export { getAdminAccessToken } from './token'
 export * from './products'
 export * from './cart'
 export * from './webhooks'

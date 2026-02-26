@@ -12,9 +12,9 @@ import { z } from 'zod'
 const shopifySchema = z.object({
   SHOPIFY_STORE_DOMAIN: z.string().min(1, 'SHOPIFY_STORE_DOMAIN is required'),
   SHOPIFY_STOREFRONT_ACCESS_TOKEN: z.string().min(1, 'SHOPIFY_STOREFRONT_ACCESS_TOKEN is required'),
-  SHOPIFY_ADMIN_ACCESS_TOKEN: z.string().min(1, 'SHOPIFY_ADMIN_ACCESS_TOKEN is required'),
-  SHOPIFY_WEBHOOK_SECRET: z.string().min(1, 'SHOPIFY_WEBHOOK_SECRET is required'),
-  SHOPIFY_API_VERSION: z.string().default('2024-01'),
+  SHOPIFY_CLIENT_ID: z.string().min(1, 'SHOPIFY_CLIENT_ID is required'),
+  SHOPIFY_CLIENT_SECRET: z.string().min(1, 'SHOPIFY_CLIENT_SECRET is required (also used as webhook HMAC secret)'),
+  SHOPIFY_API_VERSION: z.string().default('2026-01'),
 })
 
 const odooSchema = z.object({
@@ -65,8 +65,8 @@ function createLazyEnv<T extends z.ZodType>(schema: T, raw: () => Record<string,
 export const shopifyEnv = createLazyEnv(shopifySchema, () => ({
   SHOPIFY_STORE_DOMAIN: process.env.SHOPIFY_STORE_DOMAIN,
   SHOPIFY_STOREFRONT_ACCESS_TOKEN: process.env.SHOPIFY_STOREFRONT_ACCESS_TOKEN,
-  SHOPIFY_ADMIN_ACCESS_TOKEN: process.env.SHOPIFY_ADMIN_ACCESS_TOKEN,
-  SHOPIFY_WEBHOOK_SECRET: process.env.SHOPIFY_WEBHOOK_SECRET,
+  SHOPIFY_CLIENT_ID: process.env.SHOPIFY_CLIENT_ID,
+  SHOPIFY_CLIENT_SECRET: process.env.SHOPIFY_CLIENT_SECRET,
   SHOPIFY_API_VERSION: process.env.SHOPIFY_API_VERSION,
 }))
 

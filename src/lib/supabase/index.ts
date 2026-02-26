@@ -1,2 +1,2 @@
-export { supabase, createServerClient } from './client'
+export { getSupabaseClient, createServerClient } from './client'
 export * from './sync-events'

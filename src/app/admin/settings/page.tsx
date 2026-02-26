@@ -139,8 +139,8 @@ export default function SettingsPage() {
               {[
                 { name: 'SHOPIFY_STORE_DOMAIN', value: '••••••••.myshopify.com', set: true },
                 { name: 'SHOPIFY_STOREFRONT_TOKEN', value: '••••••••••••••••', set: true },
-                { name: 'SHOPIFY_ADMIN_TOKEN', value: '••••••••••••••••', set: true },
-                { name: 'SHOPIFY_WEBHOOK_SECRET', value: '••••••••••••••••', set: true },
+                { name: 'SHOPIFY_CLIENT_ID', value: '••••••••••••••••', set: true },
+                { name: 'SHOPIFY_CLIENT_SECRET', value: '••••••••••••••••', set: true },
                 { name: 'ODOO_URL', value: 'https://••••••.odoo.com', set: true },
                 { name: 'ODOO_DB', value: '••••••-prod', set: true },
                 { name: 'ODOO_USERNAME', value: '••••••@••••••.com', set: true },

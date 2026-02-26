@@ -1,9 +1,18 @@
 import Link from 'next/link'
 import Image from 'next/image'
 import { ProductCard } from '@/components/ProductCard'
-import { featuredCards, allCards, samplePacks } from '@/lib/data/products'
+import { getProductsByType } from '@/lib/shopify/products'
 
-export default function HomePage() {
+export const revalidate = 60 // ISR: revalidate every 60s
+
+export default async function HomePage() {
+  const [cards, samplePacks] = await Promise.all([
+    getProductsByType('Business Card'),
+    getProductsByType('Sample Pack'),
+  ])
+
+  const featuredCards = cards.slice(0, 4)
+
   return (
     <div>
       {/* Featured Cards */}
@@ -44,7 +53,7 @@ export default function HomePage() {
       {/* All Cards Grid */}
       <section className="max-w-[1400px] mx-auto px-6 py-10">
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-5">
-          {allCards.map(card => (
+          {cards.map(card => (
             <ProductCard key={card.id} product={card} />
           ))}
         </div>
@@ -58,7 +67,7 @@ export default function HomePage() {
         </div>
         <div className="grid grid-cols-2 md:grid-cols-3 gap-4 md:gap-5">
           {samplePacks.map(pack => (
-            <ProductCard key={pack.id} product={pack} />
+            <ProductCard key={pack.id} product={pack} description={pack.description} />
           ))}
         </div>
       </section>

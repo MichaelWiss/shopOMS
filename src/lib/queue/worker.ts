@@ -1,5 +1,5 @@
 import { Worker, Job } from 'bullmq'
-import { redis, QUEUE_NAMES, type OrderSyncJob, type InventorySyncJob, type FulfillmentSyncJob } from './queues'
+import { getRedis, QUEUE_NAMES, type OrderSyncJob, type InventorySyncJob, type FulfillmentSyncJob } from './queues'
 import { transformShopifyOrderToOdoo } from '@/lib/transforms/order'
 import { createSaleOrder, findOrderByShopifyId, cancelSaleOrder } from '@/lib/odoo/orders'
 import { updateSyncStatus } from '@/lib/supabase/sync-events'
@@ -181,7 +181,7 @@ export function startWorkers() {
     QUEUE_NAMES.ORDER_SYNC,
     processOrderSync,
     {
-      connection: redis,
+      connection: getRedis(),
       concurrency: 5,
     }
   )
@@ -190,7 +190,7 @@ export function startWorkers() {
     QUEUE_NAMES.INVENTORY_SYNC,
     processInventorySync,
     {
-      connection: redis,
+      connection: getRedis(),
       concurrency: 10,
     }
   )
@@ -199,7 +199,7 @@ export function startWorkers() {
     QUEUE_NAMES.FULFILLMENT_SYNC,
     processFulfillmentSync,
     {
-      connection: redis,
+      connection: getRedis(),
       concurrency: 5,
     }
   )

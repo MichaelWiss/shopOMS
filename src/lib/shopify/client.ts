@@ -1,4 +1,5 @@
 import { shopifyEnv } from '@/lib/env'
+import { getAdminAccessToken } from './token'
 
 interface GraphQLResponse<T> {
   data?: T
@@ -17,7 +18,7 @@ export async function shopifyStorefrontFetch<T>(
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
-      'X-Shopify-Storefront-Access-Token': shopifyEnv.SHOPIFY_STOREFRONT_ACCESS_TOKEN,
+      'Shopify-Storefront-Private-Token': shopifyEnv.SHOPIFY_STOREFRONT_ACCESS_TOKEN,
     },
     body: JSON.stringify({ query, variables }),
   })
@@ -48,11 +49,13 @@ export async function shopifyAdminFetch<T>(
   const apiVersion = shopifyEnv.SHOPIFY_API_VERSION
   const endpoint = `https://${domain}/admin/api/${apiVersion}/graphql.json`
 
+  const accessToken = await getAdminAccessToken()
+
   const response = await fetch(endpoint, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
-      'X-Shopify-Access-Token': shopifyEnv.SHOPIFY_ADMIN_ACCESS_TOKEN,
+      'X-Shopify-Access-Token': accessToken,
     },
     body: JSON.stringify({ query, variables }),
   })

@@ -1,8 +1,12 @@
 import { playfair } from '@/lib/fonts'
 import { ProductCard } from '@/components/ProductCard'
-import { samplePacks } from '@/lib/data/products'
+import { getProductsByType } from '@/lib/shopify/products'
 
-export default function SamplesPage() {
+export const revalidate = 60
+
+export default async function SamplesPage() {
+  const samplePacks = await getProductsByType('Sample Pack')
+
   return (
     <div className="px-6 py-10 bg-[#F8B4C4] min-h-screen">
       {/* Header */}
@@ -16,7 +20,7 @@ export default function SamplesPage() {
       {/* Product Grid */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6 md:gap-8 mb-16">
         {samplePacks.map(pack => (
-          <ProductCard key={pack.id} product={{ ...pack, description: pack.sampleDescription }} />
+          <ProductCard key={pack.id} product={pack} description={pack.description} />
         ))}
       </div>
 
