@@ -11,11 +11,14 @@ interface TransformedOrder {
     quantity: number
     priceUnit: number
     discount?: number
+    customizations?: Array<{ name: string; value: string }>
   }>
   metadata: {
     shopifyOrderId: string
     shopifyOrderNumber: string
   }
+  /** Aggregated customization note for the entire order */
+  note?: string
 }
 
 /**
@@ -68,12 +71,25 @@ export async function transformShopifyOrderToOdoo(
         ? (totalDiscount / (originalPrice * item.quantity)) * 100 
         : 0
 
+      // Extract customization properties (filter out internal Shopify props starting with _)
+      const customizations = (item.properties || [])
+        .filter(p => p.name && !p.name.startsWith('_'))
+        .map(p => ({ name: p.name, value: p.value }))
+
+      // Build descriptive name with customization details
+      let lineName = item.title
+      if (customizations.length > 0) {
+        const customStr = customizations.map(c => `${c.name}: ${c.value}`).join(', ')
+        lineName = `${item.title} (${customStr})`
+      }
+
       return {
         productId: odooProduct.id,
-        name: item.title,
+        name: lineName,
         quantity: item.quantity,
         priceUnit: originalPrice,
         discount: discountPercent,
+        customizations: customizations.length > 0 ? customizations : undefined,
       }
     })
   )
@@ -96,6 +112,17 @@ export async function transformShopifyOrderToOdoo(
     )
   }
 
+  // Build order-level note with all customization details
+  const linesWithCustomizations = orderLines.filter(l => l.customizations && l.customizations.length > 0)
+  let note: string | undefined
+  if (linesWithCustomizations.length > 0) {
+    const sections = linesWithCustomizations.map(line => {
+      const details = line.customizations!.map(c => `  - ${c.name}: ${c.value}`).join('\n')
+      return `${line.name.split(' (')[0]}:\n${details}`
+    })
+    note = `Customization Details:\n${sections.join('\n\n')}`
+  }
+
   return {
     partnerId: partner.id,
     orderLines,
@@ -103,6 +130,7 @@ export async function transformShopifyOrderToOdoo(
       shopifyOrderId: shopifyOrder.admin_graphql_api_id || shopifyOrder.id.toString(),
       shopifyOrderNumber: shopifyOrder.name,
     },
+    note,
   }
 }
 

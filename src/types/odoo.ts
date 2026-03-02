@@ -29,6 +29,8 @@ export interface OdooSaleOrder {
   amount_total?: number
   amount_tax?: number
   amount_untaxed?: number
+  /** Internal note — used to store all customization details */
+  note?: string
 }
 
 export interface OdooSaleOrderLine {
@@ -38,6 +40,8 @@ export interface OdooSaleOrderLine {
   price_unit: number
   discount?: number
   tax_id?: Array<[number, number, number[]]>
+  /** Customization details stored as internal note on the order line */
+  customer_note?: string
 }
 
 export interface OdooProduct {

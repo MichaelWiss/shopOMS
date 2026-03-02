@@ -15,11 +15,13 @@ export async function createSaleOrder(
     quantity: number
     priceUnit: number
     discount?: number
+    customizations?: Array<{ name: string; value: string }>
   }>,
   metadata?: {
     shopifyOrderId?: string
     shopifyOrderNumber?: string
-  }
+  },
+  note?: string
 ): Promise<number> {
   const lines: Array<[number, number, OdooSaleOrderLine]> = orderLines.map(line => [
     0,  // Create new record
@@ -38,6 +40,7 @@ export async function createSaleOrder(
     order_line: lines,
     ...(metadata?.shopifyOrderId && { shopify_order_id: metadata.shopifyOrderId }),
     ...(metadata?.shopifyOrderNumber && { shopify_order_number: metadata.shopifyOrderNumber }),
+    ...(note && { note }),
   }
 
   return create(MODEL, orderData as unknown as Record<string, unknown>)

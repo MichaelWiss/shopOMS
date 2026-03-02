@@ -114,6 +114,12 @@ export interface ShopifyOrderLineItem {
   sku: string
   price: string
   total_discount: string
+  properties: ShopifyLineItemProperty[]
+}
+
+export interface ShopifyLineItemProperty {
+  name: string
+  value: string
 }
 
 export interface ShopifyAddress {
