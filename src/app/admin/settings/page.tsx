@@ -8,7 +8,7 @@ const connections = {
     lastChecked: '2 min ago',
     config: {
       store: 'pressandco.myshopify.com',
-      apiVersion: '2024-01',
+      apiVersion: '2026-01',
       webhooks: ['orders/create', 'orders/updated', 'products/update', 'inventory_levels/update'],
     },
   },
@@ -138,15 +138,17 @@ export default function SettingsPage() {
             <tbody className="divide-y divide-[#E5E5E5]">
               {[
                 { name: 'SHOPIFY_STORE_DOMAIN', value: '••••••••.myshopify.com', set: true },
-                { name: 'SHOPIFY_STOREFRONT_TOKEN', value: '••••••••••••••••', set: true },
+                { name: 'SHOPIFY_STOREFRONT_ACCESS_TOKEN', value: '••••••••••••••••', set: true },
                 { name: 'SHOPIFY_CLIENT_ID', value: '••••••••••••••••', set: true },
                 { name: 'SHOPIFY_CLIENT_SECRET', value: '••••••••••••••••', set: true },
                 { name: 'ODOO_URL', value: 'https://••••••.odoo.com', set: true },
                 { name: 'ODOO_DB', value: '••••••-prod', set: true },
                 { name: 'ODOO_USERNAME', value: '••••••@••••••.com', set: true },
-                { name: 'ODOO_PASSWORD', value: '••••••••••••••••', set: true },
-                { name: 'SUPABASE_URL', value: 'https://••••••.supabase.co', set: true },
-                { name: 'SUPABASE_ANON_KEY', value: '••••••••••••••••', set: true },
+                { name: 'ODOO_API_KEY', value: '••••••••••••••••', set: true },
+                { name: 'NEXT_PUBLIC_SUPABASE_URL', value: 'https://••••••.supabase.co', set: true },
+                { name: 'NEXT_PUBLIC_SUPABASE_ANON_KEY', value: '••••••••••••••••', set: true },
+                { name: 'SUPABASE_SERVICE_ROLE_KEY', value: '••••••••••••••••', set: true },
+                { name: 'ADMIN_API_KEY', value: '••••••••••••••••', set: true },
                 { name: 'REDIS_URL', value: 'redis://••••••:6379', set: true },
               ].map((env) => (
                 <tr key={env.name} className="hover:bg-[#FAFAFA]">

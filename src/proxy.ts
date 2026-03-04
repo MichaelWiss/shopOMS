@@ -39,26 +39,8 @@ export function proxy(request: NextRequest) {
     const adminCookie = request.cookies.get('admin_session')?.value
     const apiKey = process.env.ADMIN_API_KEY
 
-    // Allow access if valid admin cookie, or if API key matches query param (for initial login)
-    const loginKey = request.nextUrl.searchParams.get('key')
-
-    if (loginKey && loginKey === apiKey) {
-      // Set the admin session cookie and redirect without the key in URL
-      const url = request.nextUrl.clone()
-      url.searchParams.delete('key')
-      const response = NextResponse.redirect(url)
-      response.cookies.set('admin_session', apiKey, {
-        httpOnly: true,
-        secure: process.env.NODE_ENV === 'production',
-        sameSite: 'lax',
-        maxAge: 60 * 60 * 24 * 7, // 7 days
-        path: '/admin',
-      })
-      return response
-    }
-
     if (adminCookie !== apiKey) {
-      // Return a simple login page
+      // Return a simple login page that POSTs to /api/auth/login
       return new NextResponse(
         `<!DOCTYPE html>
 <html lang="en">
@@ -72,17 +54,35 @@ export function proxy(request: NextRequest) {
   button { width: 100%; padding: 0.75rem; background: #1a1a1a; color: white; border: none; border-radius: 4px; font-size: 0.875rem; cursor: pointer; margin-top: 0.75rem; }
   button:hover { background: #333; }
   .brand { color: #999; font-size: 0.75rem; margin-bottom: 0.25rem; }
+  .error { color: #EF4444; font-size: 0.8rem; margin-top: 0.5rem; display: none; }
 </style>
 </head>
 <body>
   <div class="login">
     <p class="brand">Press & Co OMS</p>
     <h1>Admin Login</h1>
-    <form method="GET">
-      <input type="password" name="key" placeholder="Enter admin key" required autofocus />
+    <form id="loginForm">
+      <input type="password" id="key" placeholder="Enter admin key" required autofocus />
       <button type="submit">Sign In</button>
+      <p class="error" id="error">Invalid admin key</p>
     </form>
   </div>
+  <script>
+    document.getElementById('loginForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const key = document.getElementById('key').value;
+      const res = await fetch('/api/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ key }),
+      });
+      if (res.ok) {
+        window.location.reload();
+      } else {
+        document.getElementById('error').style.display = 'block';
+      }
+    });
+  </script>
 </body>
 </html>`,
         {

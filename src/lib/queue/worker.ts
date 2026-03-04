@@ -222,6 +222,17 @@ export function startWorkers() {
 
   console.log('[Worker] Workers started successfully')
 
+  // Graceful shutdown
+  const shutdown = async () => {
+    console.log('[Worker] Shutting down...')
+    await Promise.all(workers.map(w => w.close()))
+    console.log('[Worker] All workers closed')
+    process.exit(0)
+  }
+
+  process.on('SIGTERM', shutdown)
+  process.on('SIGINT', shutdown)
+
   return { orderWorker, inventoryWorker, fulfillmentWorker }
 }
 
