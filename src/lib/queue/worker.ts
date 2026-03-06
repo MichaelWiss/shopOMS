@@ -6,7 +6,7 @@ import { updateSyncStatus } from '@/lib/supabase/sync-events'
 import type { ShopifyOrderWebhook } from '@/types/shopify'
 
 /**
- * Process order sync jobs
+ * Process order sync jobs with progress tracking
  */
 async function processOrderSync(job: Job<OrderSyncJob>) {
   const { type, shopifyOrder, syncEventId } = job.data
@@ -15,12 +15,14 @@ async function processOrderSync(job: Job<OrderSyncJob>) {
   console.log(`[OrderSync] Processing ${type} for sync event ${syncEventId}`)
 
   try {
-    // Update status to processing
+    // Step 1: Update status to processing (10%)
+    await job.updateProgress(10)
     await updateSyncStatus(syncEventId, 'processing')
 
     switch (type) {
       case 'order_create': {
-        // Check if order already exists
+        // Step 2: Check for existing order (30%)
+        await job.updateProgress(30)
         const order = shopifyOrder as unknown as ShopifyOrderWebhook
         const existingOrder = await findOrderByShopifyId(
           order.admin_graphql_api_id || order.id.toString()
@@ -28,6 +30,7 @@ async function processOrderSync(job: Job<OrderSyncJob>) {
 
         if (existingOrder) {
           console.log(`[OrderSync] Order already exists in Odoo: ${existingOrder.id}`)
+          await job.updateProgress(100)
           await updateSyncStatus(syncEventId, 'success', {
             odoo_id: existingOrder.id,
             processing_time_ms: Date.now() - startTime,
@@ -35,14 +38,20 @@ async function processOrderSync(job: Job<OrderSyncJob>) {
           return { success: true, odooId: existingOrder.id, action: 'skipped_duplicate' }
         }
 
-        // Transform and create order
+        // Step 3: Transform order data (50%)
+        await job.updateProgress(50)
         const transformed = await transformShopifyOrderToOdoo(order)
+
+        // Step 4: Create order in Odoo (80%)
+        await job.updateProgress(80)
         const odooOrderId = await createSaleOrder(
           transformed.partnerId,
           transformed.orderLines,
           transformed.metadata
         )
 
+        // Step 5: Update status and complete (100%)
+        await job.updateProgress(100)
         await updateSyncStatus(syncEventId, 'success', {
           odoo_id: odooOrderId,
           transformed_payload: transformed as unknown as Record<string, unknown>,
@@ -54,13 +63,16 @@ async function processOrderSync(job: Job<OrderSyncJob>) {
       }
 
       case 'order_cancel': {
+        await job.updateProgress(30)
         const cancelOrder = shopifyOrder as unknown as ShopifyOrderWebhook
         const existingOrderToCancel = await findOrderByShopifyId(
           cancelOrder.admin_graphql_api_id || cancelOrder.id.toString()
         )
 
         if (existingOrderToCancel?.id) {
+          await job.updateProgress(70)
           await cancelSaleOrder(existingOrderToCancel.id)
+          await job.updateProgress(100)
           await updateSyncStatus(syncEventId, 'success', {
             odoo_id: existingOrderToCancel.id,
             processing_time_ms: Date.now() - startTime,
@@ -68,6 +80,7 @@ async function processOrderSync(job: Job<OrderSyncJob>) {
           return { success: true, odooId: existingOrderToCancel.id, action: 'cancelled' }
         }
 
+        await job.updateProgress(100)
         await updateSyncStatus(syncEventId, 'success', {
           processing_time_ms: Date.now() - startTime,
         })
@@ -75,7 +88,9 @@ async function processOrderSync(job: Job<OrderSyncJob>) {
       }
 
       case 'order_update': {
+        await job.updateProgress(50)
         // For now, just log updates - full implementation would sync changes
+        await job.updateProgress(100)
         await updateSyncStatus(syncEventId, 'success', {
           processing_time_ms: Date.now() - startTime,
         })
@@ -112,7 +127,7 @@ async function processOrderSync(job: Job<OrderSyncJob>) {
 }
 
 /**
- * Process inventory sync jobs
+ * Process inventory sync jobs with progress tracking
  */
 async function processInventorySync(job: Job<InventorySyncJob>) {
   const { syncEventId } = job.data
@@ -121,12 +136,15 @@ async function processInventorySync(job: Job<InventorySyncJob>) {
   console.log(`[InventorySync] Processing sync event ${syncEventId}`)
 
   try {
+    await job.updateProgress(10)
     await updateSyncStatus(syncEventId, 'processing')
 
     // TODO: Implement inventory sync logic
+    await job.updateProgress(50)
     // 1. Find product in Odoo by SKU or Shopify ID
     // 2. Update quantity
 
+    await job.updateProgress(100)
     await updateSyncStatus(syncEventId, 'success', {
       processing_time_ms: Date.now() - startTime,
     })
@@ -143,7 +161,7 @@ async function processInventorySync(job: Job<InventorySyncJob>) {
 }
 
 /**
- * Process fulfillment sync jobs
+ * Process fulfillment sync jobs with progress tracking
  */
 async function processFulfillmentSync(job: Job<FulfillmentSyncJob>) {
   const { syncEventId } = job.data
@@ -152,12 +170,15 @@ async function processFulfillmentSync(job: Job<FulfillmentSyncJob>) {
   console.log(`[FulfillmentSync] Processing sync event ${syncEventId}`)
 
   try {
+    await job.updateProgress(10)
     await updateSyncStatus(syncEventId, 'processing')
 
     // TODO: Implement fulfillment sync logic
+    await job.updateProgress(50)
     // 1. Find order in Odoo
     // 2. Create/update delivery in Odoo
 
+    await job.updateProgress(100)
     await updateSyncStatus(syncEventId, 'success', {
       processing_time_ms: Date.now() - startTime,
     })
@@ -213,6 +234,10 @@ export function startWorkers() {
 
     worker.on('failed', (job, error) => {
       console.error(`[Worker] Job ${job?.id} failed:`, error.message)
+    })
+
+    worker.on('progress', (job, progress) => {
+      console.log(`[Worker] Job ${job.id} progress: ${typeof progress === 'number' ? progress + '%' : JSON.stringify(progress)}`)
     })
 
     worker.on('error', (error) => {

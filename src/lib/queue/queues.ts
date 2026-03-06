@@ -131,3 +131,72 @@ export async function getQueueStats() {
     fulfillmentSync: fulfillmentCounts,
   }
 }
+
+// Get job by ID with progress
+export async function getJobWithProgress(queueName: string, jobId: string) {
+  let queue: Queue
+  switch (queueName) {
+    case QUEUE_NAMES.ORDER_SYNC:
+      queue = getOrderSyncQueue()
+      break
+    case QUEUE_NAMES.INVENTORY_SYNC:
+      queue = getInventorySyncQueue()
+      break
+    case QUEUE_NAMES.FULFILLMENT_SYNC:
+      queue = getFulfillmentSyncQueue()
+      break
+    default:
+      return null
+  }
+
+  const job = await queue.getJob(jobId)
+  if (!job) return null
+
+  const state = await job.getState()
+  const progress = job.progress
+
+  return {
+    id: job.id,
+    name: job.name,
+    data: job.data,
+    progress: typeof progress === 'number' ? progress : 0,
+    state,
+    attemptsMade: job.attemptsMade,
+    failedReason: job.failedReason,
+    processedOn: job.processedOn,
+    finishedOn: job.finishedOn,
+  }
+}
+
+// Get active jobs with progress
+export async function getActiveJobsWithProgress() {
+  const [orderJobs, inventoryJobs, fulfillmentJobs] = await Promise.all([
+    getOrderSyncQueue().getJobs(['active', 'waiting', 'delayed']),
+    getInventorySyncQueue().getJobs(['active', 'waiting', 'delayed']),
+    getFulfillmentSyncQueue().getJobs(['active', 'waiting', 'delayed']),
+  ])
+
+  const formatJob = async (job: Awaited<ReturnType<Queue['getJob']>>, queueName: string) => {
+    if (!job) return null
+    const state = await job.getState()
+    return {
+      id: job.id,
+      queue: queueName,
+      progress: typeof job.progress === 'number' ? job.progress : 0,
+      state,
+      attemptsMade: job.attemptsMade,
+      data: {
+        type: (job.data as Record<string, unknown>).type,
+        syncEventId: (job.data as Record<string, unknown>).syncEventId,
+      },
+    }
+  }
+
+  const [order, inventory, fulfillment] = await Promise.all([
+    Promise.all(orderJobs.map(j => formatJob(j, QUEUE_NAMES.ORDER_SYNC))),
+    Promise.all(inventoryJobs.map(j => formatJob(j, QUEUE_NAMES.INVENTORY_SYNC))),
+    Promise.all(fulfillmentJobs.map(j => formatJob(j, QUEUE_NAMES.FULFILLMENT_SYNC))),
+  ])
+
+  return [...order, ...inventory, ...fulfillment].filter(Boolean)
+}

@@ -2,6 +2,7 @@ import Link from 'next/link'
 import Image from 'next/image'
 import { notFound } from 'next/navigation'
 import { getProductByHandle, getProducts } from '@/lib/shopify/products'
+import { AddToCartButton } from '@/components/AddToCartButton'
 
 export const revalidate = 60
 
@@ -91,22 +92,6 @@ export default async function ProductPage({ params }: { params: Promise<{ handle
           {/* Price */}
           <p className="text-[24px] text-[#1a1a1a] mt-8">${minPrice.toFixed(0)}</p>
 
-          {/* Variant Selection */}
-          {variants.length > 1 && (
-            <div className="mt-6">
-              <label className="text-[11px] uppercase tracking-[0.1em] text-[#666] block mb-2">
-                {variants[0]?.selectedOptions[0]?.name ?? 'Option'}
-              </label>
-              <select className="w-full border border-[#E5E5E5] px-4 py-3 text-[14px] bg-white appearance-none cursor-pointer">
-                {variants.map((v) => (
-                  <option key={v.id} value={v.id}>
-                    {v.selectedOptions.map(o => o.value).join(' / ')} — ${parseFloat(v.price.amount).toFixed(0)}
-                  </option>
-                ))}
-              </select>
-            </div>
-          )}
-
           {/* Customize Your Card */}
           {product.productType === 'Business Card' && (
             <div className="mt-6">
@@ -122,9 +107,15 @@ export default async function ProductPage({ params }: { params: Promise<{ handle
           )}
 
           {/* Add to Cart */}
-          <button className="w-full bg-[#1a1a1a] text-white py-4 mt-6 text-[13px] uppercase tracking-[0.1em] hover:bg-[#333] transition-colors">
-            Add to Cart
-          </button>
+          <AddToCartButton 
+            variantId={variants[0]?.id ?? ''}
+            variants={variants.length > 1 ? variants.map(v => ({
+              id: v.id,
+              title: v.selectedOptions.map(o => o.value).join(' / '),
+              price: v.price.amount,
+            })) : undefined}
+            className="mt-6"
+          />
 
           {/* Free Shipping */}
           <p className="text-[13px] text-[#666] text-center mt-3">Free US Shipping</p>

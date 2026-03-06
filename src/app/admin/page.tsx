@@ -114,8 +114,6 @@ export default async function AdminDashboard() {
             )}
           </div>
         </div>
-          </div>
-        </div>
 
         {/* Sidebar */}
         <div className="space-y-6">

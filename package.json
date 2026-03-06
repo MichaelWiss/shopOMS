@@ -7,6 +7,9 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
+    "test": "vitest",
+    "test:run": "vitest run",
+    "test:coverage": "vitest run --coverage",
     "db:push": "npx supabase db push",
     "db:generate": "npx supabase gen types typescript --local > src/types/supabase.ts",
     "worker": "tsx src/lib/queue/worker.ts"

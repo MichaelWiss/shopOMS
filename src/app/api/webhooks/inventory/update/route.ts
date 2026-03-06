@@ -2,9 +2,17 @@ import { NextRequest, NextResponse } from 'next/server'
 import { verifyWebhookSignature, extractWebhookMetadata } from '@/lib/shopify/webhooks'
 import { createSyncEvent } from '@/lib/supabase/sync-events'
 import { addInventorySyncJob } from '@/lib/queue'
+import { rateLimiters, getClientIp } from '@/lib/rate-limit'
 import type { ShopifyInventoryWebhook } from '@/types/shopify'
 
 export async function POST(request: NextRequest) {
+  // Rate limit webhooks
+  const ip = getClientIp(request.headers)
+  const rateLimit = rateLimiters.webhook(ip)
+  if (!rateLimit.success) {
+    return NextResponse.json({ error: 'Rate limit exceeded' }, { status: 429 })
+  }
+
   try {
     const rawBody = await request.text()
     const metadata = extractWebhookMetadata(request.headers)

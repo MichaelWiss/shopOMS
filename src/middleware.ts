@@ -5,18 +5,18 @@ import { NextRequest, NextResponse } from 'next/server'
  * 
  * - Admin pages (/admin/*) require the ADMIN_API_KEY cookie
  * - API routes (/api/sync/*, /api/health) require Bearer token or x-api-key header
+ * - Webhooks (/api/webhooks/*) are NOT protected here (HMAC verified in route)
  */
-export function proxy(request: NextRequest) {
+export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl
 
   // --- Protect API routes ---
-  if (pathname.startsWith('/api/sync') || pathname.startsWith('/api/health')) {
+  if (pathname.startsWith('/api/sync') || pathname === '/api/health') {
     const authHeader = request.headers.get('authorization')
     const apiKeyHeader = request.headers.get('x-api-key')
     const apiKey = process.env.ADMIN_API_KEY
 
     if (!apiKey) {
-      // If ADMIN_API_KEY is not configured, block all access
       return NextResponse.json(
         { error: 'Server misconfigured: ADMIN_API_KEY not set' },
         { status: 500 }
@@ -39,7 +39,12 @@ export function proxy(request: NextRequest) {
     const adminCookie = request.cookies.get('admin_session')?.value
     const apiKey = process.env.ADMIN_API_KEY
 
-    if (adminCookie !== apiKey) {
+    // Skip protection if login page (allow the auth/login API)
+    if (pathname === '/admin/login') {
+      return NextResponse.next()
+    }
+
+    if (!apiKey || adminCookie !== apiKey) {
       // Return a simple login page that POSTs to /api/auth/login
       return new NextResponse(
         `<!DOCTYPE html>
