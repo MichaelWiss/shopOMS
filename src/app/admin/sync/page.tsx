@@ -1,24 +1,61 @@
 import { Search, RefreshCw, CheckCircle, AlertTriangle, Clock, Filter } from 'lucide-react'
+import { getSyncEvents, getSyncStats } from '@/lib/supabase/sync-events'
+import type { SyncEvent, SyncStats } from '@/types/sync'
 
-const syncEvents = [
-  { id: 1, type: 'order', action: 'orders/create', source: 'Shopify', target: 'Odoo', status: 'success', details: 'Order #1001 → SO/2026/0042', duration: '1.2s', timestamp: '2026-02-02 14:32:45' },
-  { id: 2, type: 'order', action: 'orders/create', source: 'Shopify', target: 'Odoo', status: 'success', details: 'Order #1000 → SO/2026/0041', duration: '0.9s', timestamp: '2026-02-02 14:15:22' },
-  { id: 3, type: 'order', action: 'orders/create', source: 'Shopify', target: 'Odoo', status: 'pending', details: 'Order #999 - queued', duration: '—', timestamp: '2026-02-02 13:58:10' },
-  { id: 4, type: 'order', action: 'orders/create', source: 'Shopify', target: 'Odoo', status: 'error', details: 'Order #997 - Odoo connection timeout', duration: '30.0s', timestamp: '2026-02-02 12:45:33' },
-  { id: 5, type: 'inventory', action: 'inventory/update', source: 'Odoo', target: 'Shopify', status: 'success', details: '12 items updated', duration: '2.4s', timestamp: '2026-02-02 12:00:00' },
-  { id: 6, type: 'product', action: 'products/sync', source: 'Shopify', target: 'Odoo', status: 'success', details: 'Full catalog sync - 48 products', duration: '8.7s', timestamp: '2026-02-02 10:00:00' },
-  { id: 7, type: 'order', action: 'orders/create', source: 'Shopify', target: 'Odoo', status: 'success', details: 'Order #996 → SO/2026/0039', duration: '1.1s', timestamp: '2026-02-02 09:45:12' },
-  { id: 8, type: 'order', action: 'orders/update', source: 'Odoo', target: 'Supabase', status: 'success', details: 'SO/2026/0038 status → shipped', duration: '0.3s', timestamp: '2026-02-02 09:30:00' },
-  { id: 9, type: 'webhook', action: 'webhook/verify', source: 'Shopify', target: 'Server', status: 'success', details: 'HMAC verification passed', duration: '0.1s', timestamp: '2026-02-02 09:15:00' },
-  { id: 10, type: 'auth', action: 'auth/refresh', source: 'Server', target: 'Odoo', status: 'success', details: 'Session token refreshed', duration: '0.5s', timestamp: '2026-02-02 08:00:00' },
-]
+export const revalidate = 10 // Revalidate every 10 seconds
 
-const stats = {
-  today: { total: 24, success: 21, pending: 2, errors: 1 },
-  week: { total: 156, success: 152, pending: 2, errors: 2 },
+function formatDirection(direction: string): string {
+  const [source, target] = direction.split('_to_')
+  return `${source.charAt(0).toUpperCase() + source.slice(1)} → ${target.charAt(0).toUpperCase() + target.slice(1)}`
 }
 
-export default function SyncPage() {
+function formatDuration(ms: number | null | undefined): string {
+  if (!ms) return '—'
+  if (ms < 1000) return `${ms}ms`
+  return `${(ms / 1000).toFixed(1)}s`
+}
+
+function formatTimestamp(date: string | undefined): string {
+  if (!date) return '—'
+  return new Date(date).toLocaleString('en-US', {
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit',
+  })
+}
+
+function getEventDetails(event: SyncEvent): string {
+  if (event.error_message) {
+    return event.error_message.slice(0, 50) + (event.error_message.length > 50 ? '...' : '')
+  }
+  if (event.odoo_id && event.shopify_id) {
+    return `Shopify ${event.shopify_id.slice(-8)} → Odoo ${event.odoo_id}`
+  }
+  if (event.shopify_id) {
+    return `Shopify ${event.shopify_id.slice(-8)}`
+  }
+  return event.type
+}
+
+export default async function SyncPage() {
+  const [events, stats] = await Promise.all([
+    getSyncEvents({ limit: 50 }),
+    getSyncStats(),
+  ])
+
+  // Calculate today's stats
+  const todayStart = new Date()
+  todayStart.setHours(0, 0, 0, 0)
+  const todayEvents = events.filter(e => new Date(e.created_at!) >= todayStart)
+  const todayStats = {
+    total: todayEvents.length,
+    success: todayEvents.filter(e => e.status === 'success').length,
+    pending: todayEvents.filter(e => e.status === 'pending' || e.status === 'processing').length,
+    errors: todayEvents.filter(e => e.status === 'failed').length,
+  }
   return (
     <div className="max-w-[1400px] mx-auto">
       <div className="flex items-center justify-between mb-6">
@@ -40,44 +77,44 @@ export default function SyncPage() {
           <p className="text-[12px] text-[#666] uppercase tracking-wide mb-3">Today</p>
           <div className="flex items-center gap-6">
             <div>
-              <p className="text-[24px] font-medium text-[#1a1a1a]">{stats.today.total}</p>
+              <p className="text-[24px] font-medium text-[#1a1a1a]">{todayStats.total}</p>
               <p className="text-[11px] text-[#666]">total events</p>
             </div>
             <div className="flex items-center gap-4 text-[13px]">
               <span className="flex items-center gap-1.5">
                 <CheckCircle className="h-4 w-4 text-[#10B981]" />
-                {stats.today.success}
+                {todayStats.success}
               </span>
               <span className="flex items-center gap-1.5">
                 <Clock className="h-4 w-4 text-[#F59E0B]" />
-                {stats.today.pending}
+                {todayStats.pending}
               </span>
               <span className="flex items-center gap-1.5">
                 <AlertTriangle className="h-4 w-4 text-[#EF4444]" />
-                {stats.today.errors}
+                {todayStats.errors}
               </span>
             </div>
           </div>
         </div>
         <div className="bg-white p-4 rounded-lg border border-[#E5E5E5]">
-          <p className="text-[12px] text-[#666] uppercase tracking-wide mb-3">This Week</p>
+          <p className="text-[12px] text-[#666] uppercase tracking-wide mb-3">All Time</p>
           <div className="flex items-center gap-6">
             <div>
-              <p className="text-[24px] font-medium text-[#1a1a1a]">{stats.week.total}</p>
+              <p className="text-[24px] font-medium text-[#1a1a1a]">{stats.total}</p>
               <p className="text-[11px] text-[#666]">total events</p>
             </div>
             <div className="flex items-center gap-4 text-[13px]">
               <span className="flex items-center gap-1.5">
                 <CheckCircle className="h-4 w-4 text-[#10B981]" />
-                {stats.week.success}
+                {stats.success}
               </span>
               <span className="flex items-center gap-1.5">
                 <Clock className="h-4 w-4 text-[#F59E0B]" />
-                {stats.week.pending}
+                {stats.pending + stats.processing}
               </span>
               <span className="flex items-center gap-1.5">
                 <AlertTriangle className="h-4 w-4 text-[#EF4444]" />
-                {stats.week.errors}
+                {stats.failed}
               </span>
             </div>
           </div>
@@ -131,58 +168,64 @@ export default function SyncPage() {
             </tr>
           </thead>
           <tbody className="divide-y divide-[#E5E5E5]">
-            {syncEvents.map((event) => (
-              <tr key={event.id} className={`hover:bg-[#FAFAFA] transition-colors ${event.status === 'error' ? 'bg-[#FEF2F2]' : ''}`}>
-                <td className="px-4 py-3">
-                  <span className={`text-[11px] px-2 py-0.5 rounded ${
-                    event.type === 'order' ? 'bg-[#DBEAFE] text-[#1E40AF]' :
-                    event.type === 'product' ? 'bg-[#FEF3C7] text-[#92400E]' :
-                    event.type === 'inventory' ? 'bg-[#D1FAE5] text-[#065F46]' :
-                    event.type === 'webhook' ? 'bg-[#E0E7FF] text-[#3730A3]' :
-                    'bg-[#F3F4F6] text-[#4B5563]'
-                  }`}>
-                    {event.type}
-                  </span>
+            {events.length === 0 ? (
+              <tr>
+                <td colSpan={7} className="px-4 py-8 text-center text-[13px] text-[#666]">
+                  No sync events yet. Events will appear here when webhooks are triggered.
                 </td>
-                <td className="px-4 py-3 text-[12px] text-[#1a1a1a] font-mono">{event.action}</td>
-                <td className="px-4 py-3 text-[12px] text-[#666]">
-                  {event.source} → {event.target}
-                </td>
-                <td className="px-4 py-3 text-[12px] text-[#1a1a1a]">{event.details}</td>
-                <td className="px-4 py-3 text-[12px] text-[#666] font-mono">{event.duration}</td>
-                <td className="px-4 py-3">
-                  <div className="flex items-center gap-1.5">
-                    {event.status === 'success' ? (
-                      <CheckCircle className="h-4 w-4 text-[#10B981]" />
-                    ) : event.status === 'pending' ? (
-                      <Clock className="h-4 w-4 text-[#F59E0B]" />
-                    ) : (
-                      <AlertTriangle className="h-4 w-4 text-[#EF4444]" />
-                    )}
-                    <span className={`text-[11px] ${
-                      event.status === 'success' ? 'text-[#10B981]' :
-                      event.status === 'pending' ? 'text-[#F59E0B]' :
-                      'text-[#EF4444]'
-                    }`}>
-                      {event.status}
-                    </span>
-                  </div>
-                </td>
-                <td className="px-4 py-3 text-[11px] text-[#666]">{event.timestamp}</td>
               </tr>
-            ))}
+            ) : (
+              events.map((event) => (
+                <tr key={event.id} className={`hover:bg-[#FAFAFA] transition-colors ${event.status === 'failed' ? 'bg-[#FEF2F2]' : ''}`}>
+                  <td className="px-4 py-3">
+                    <span className={`text-[11px] px-2 py-0.5 rounded ${
+                      event.type === 'order' ? 'bg-[#DBEAFE] text-[#1E40AF]' :
+                      event.type === 'product' ? 'bg-[#FEF3C7] text-[#92400E]' :
+                      event.type === 'inventory' ? 'bg-[#D1FAE5] text-[#065F46]' :
+                      event.type === 'fulfillment' ? 'bg-[#E0E7FF] text-[#3730A3]' :
+                      'bg-[#F3F4F6] text-[#4B5563]'
+                    }`}>
+                      {event.type}
+                    </span>
+                  </td>
+                  <td className="px-4 py-3 text-[12px] text-[#1a1a1a] font-mono">{event.direction}</td>
+                  <td className="px-4 py-3 text-[12px] text-[#666]">
+                    {formatDirection(event.direction)}
+                  </td>
+                  <td className="px-4 py-3 text-[12px] text-[#1a1a1a]">{getEventDetails(event)}</td>
+                  <td className="px-4 py-3 text-[12px] text-[#666] font-mono">{formatDuration(event.processing_time_ms)}</td>
+                  <td className="px-4 py-3">
+                    <div className="flex items-center gap-1.5">
+                      {event.status === 'success' ? (
+                        <CheckCircle className="h-4 w-4 text-[#10B981]" />
+                      ) : event.status === 'pending' || event.status === 'processing' ? (
+                        <Clock className="h-4 w-4 text-[#F59E0B]" />
+                      ) : (
+                        <AlertTriangle className="h-4 w-4 text-[#EF4444]" />
+                      )}
+                      <span className={`text-[11px] ${
+                        event.status === 'success' ? 'text-[#10B981]' :
+                        event.status === 'pending' || event.status === 'processing' ? 'text-[#F59E0B]' :
+                        'text-[#EF4444]'
+                      }`}>
+                        {event.status}
+                      </span>
+                    </div>
+                  </td>
+                  <td className="px-4 py-3 text-[11px] text-[#666]">{formatTimestamp(event.created_at)}</td>
+                </tr>
+              ))
+            )}
           </tbody>
         </table>
       </div>
 
       {/* Pagination */}
       <div className="flex items-center justify-between mt-4">
-        <p className="text-[12px] text-[#666]">Showing 1-10 of 156 events</p>
+        <p className="text-[12px] text-[#666]">Showing {events.length} events</p>
         <div className="flex items-center gap-2">
           <button className="px-3 py-1.5 text-[12px] border border-[#E5E5E5] rounded bg-white hover:bg-[#FAFAFA]">Previous</button>
           <button className="px-3 py-1.5 text-[12px] border border-[#E5E5E5] rounded bg-[#1a1a1a] text-white">1</button>
-          <button className="px-3 py-1.5 text-[12px] border border-[#E5E5E5] rounded bg-white hover:bg-[#FAFAFA]">2</button>
-          <button className="px-3 py-1.5 text-[12px] border border-[#E5E5E5] rounded bg-white hover:bg-[#FAFAFA]">3</button>
           <button className="px-3 py-1.5 text-[12px] border border-[#E5E5E5] rounded bg-white hover:bg-[#FAFAFA]">Next</button>
         </div>
       </div>

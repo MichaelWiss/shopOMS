@@ -8,35 +8,43 @@ import {
   ArrowUpRight,
   RefreshCw
 } from 'lucide-react'
+import { getSyncEvents, getSyncStats } from '@/lib/supabase/sync-events'
 
-// Mock data
-const stats = [
-  { label: 'Orders Today', value: '12', change: '+3', icon: ShoppingCart },
-  { label: 'Pending Sync', value: '2', change: null, icon: Clock, alert: true },
-  { label: 'Products Synced', value: '48', change: '100%', icon: Package },
-  { label: 'Sync Errors', value: '0', change: null, icon: CheckCircle, success: true },
-]
+export const revalidate = 10
 
-const recentOrders = [
-  { id: 'ORD-1234', customer: 'John Smith', total: 180, status: 'synced', time: '2 min ago' },
-  { id: 'ORD-1233', customer: 'Emma Wilson', total: 95, status: 'synced', time: '15 min ago' },
-  { id: 'ORD-1232', customer: 'Michael Chen', total: 280, status: 'pending', time: '32 min ago' },
-  { id: 'ORD-1231', customer: 'Sarah Davis', total: 110, status: 'synced', time: '1 hour ago' },
-  { id: 'ORD-1230', customer: 'James Brown', total: 90, status: 'error', time: '2 hours ago' },
-]
+export default async function AdminDashboard() {
+  const [recentEvents, allStats] = await Promise.all([
+    getSyncEvents({ limit: 10 }),
+    getSyncStats(),
+  ])
 
-const syncStatus = {
-  shopify: { status: 'connected', lastSync: '2 min ago' },
-  odoo: { status: 'connected', lastSync: '2 min ago' },
-  supabase: { status: 'connected', lastSync: 'Real-time' },
-}
+  // Calculate today's stats
+  const todayStart = new Date()
+  todayStart.setHours(0, 0, 0, 0)
+  const todayEvents = recentEvents.filter(e => new Date(e.created_at!) >= todayStart)
+  
+  const stats = [
+    { label: 'Events Today', value: String(todayEvents.length), change: null, icon: ShoppingCart },
+    { label: 'Pending Sync', value: String(allStats.pending + allStats.processing), change: null, icon: Clock, alert: (allStats.pending + allStats.processing) > 0 },
+    { label: 'Total Synced', value: String(allStats.success), change: `${Math.round((allStats.success / Math.max(allStats.total, 1)) * 100)}%`, icon: Package },
+    { label: 'Sync Errors', value: String(allStats.failed), change: null, icon: allStats.failed === 0 ? CheckCircle : AlertTriangle, success: allStats.failed === 0 },
+  ]
 
-const alerts = [
-  { type: 'warning', message: 'Order ORD-1230 failed to sync to Odoo - retry scheduled', time: '2 hours ago' },
-  { type: 'info', message: 'Product inventory updated for 12 items', time: '4 hours ago' },
-]
+  // Map recent events to order-like display
+  const recentOrders = recentEvents.slice(0, 5).map(event => ({
+    id: event.id?.slice(0, 8) || 'N/A',
+    customer: event.type,
+    total: event.odoo_id || 0,
+    status: event.status === 'success' ? 'synced' : event.status === 'failed' ? 'error' : 'pending',
+    time: event.created_at ? new Date(event.created_at).toLocaleTimeString() : '',
+  }))
 
-export default function AdminDashboard() {
+  const failedEvents = recentEvents.filter(e => e.status === 'failed').slice(0, 3)
+  const alerts = failedEvents.map(e => ({
+    type: 'warning' as const,
+    message: e.error_message || `${e.type} sync failed`,
+    time: e.created_at ? new Date(e.created_at).toLocaleTimeString() : '',
+  }))
   return (
     <div className="max-w-[1400px] mx-auto">
       <div className="flex items-center justify-between mb-6">
@@ -68,36 +76,44 @@ export default function AdminDashboard() {
       </div>
 
       <div className="grid md:grid-cols-3 gap-6">
-        {/* Recent Orders */}
+        {/* Recent Sync Events */}
         <div className="md:col-span-2 bg-white rounded-lg border border-[#E5E5E5]">
           <div className="flex items-center justify-between p-4 border-b border-[#E5E5E5]">
-            <h2 className="text-[14px] font-medium">Recent Orders</h2>
-            <Link href="/admin/orders" className="text-[12px] text-[#666] hover:text-[#1a1a1a] flex items-center gap-1">
+            <h2 className="text-[14px] font-medium">Recent Sync Events</h2>
+            <Link href="/admin/sync" className="text-[12px] text-[#666] hover:text-[#1a1a1a] flex items-center gap-1">
               View All <ArrowUpRight className="h-3 w-3" />
             </Link>
           </div>
           <div className="divide-y divide-[#E5E5E5]">
-            {recentOrders.map((order) => (
-              <Link key={order.id} href={`/admin/orders/${order.id}`} className="flex items-center justify-between p-4 hover:bg-[#FAFAFA] transition-colors">
-                <div className="flex items-center gap-4">
-                  <div>
-                    <p className="text-[13px] font-medium text-[#1a1a1a]">{order.id}</p>
-                    <p className="text-[12px] text-[#666]">{order.customer}</p>
+            {recentOrders.length === 0 ? (
+              <div className="p-8 text-center text-[13px] text-[#666]">
+                No sync events yet
+              </div>
+            ) : (
+              recentOrders.map((order) => (
+                <Link key={order.id} href="/admin/sync" className="flex items-center justify-between p-4 hover:bg-[#FAFAFA] transition-colors">
+                  <div className="flex items-center gap-4">
+                    <div>
+                      <p className="text-[13px] font-medium text-[#1a1a1a]">{order.id}</p>
+                      <p className="text-[12px] text-[#666]">{order.customer}</p>
+                    </div>
                   </div>
-                </div>
-                <div className="flex items-center gap-4">
-                  <span className="text-[13px] text-[#1a1a1a]">${order.total}</span>
-                  <span className={`text-[11px] px-2 py-0.5 rounded ${
-                    order.status === 'synced' ? 'bg-[#D1FAE5] text-[#065F46]' :
-                    order.status === 'pending' ? 'bg-[#FEF3C7] text-[#92400E]' :
-                    'bg-[#FEE2E2] text-[#991B1B]'
-                  }`}>
-                    {order.status}
-                  </span>
-                  <span className="text-[11px] text-[#999] w-20 text-right">{order.time}</span>
-                </div>
-              </Link>
-            ))}
+                  <div className="flex items-center gap-4">
+                    {order.total > 0 && <span className="text-[13px] text-[#1a1a1a]">Odoo #{order.total}</span>}
+                    <span className={`text-[11px] px-2 py-0.5 rounded ${
+                      order.status === 'synced' ? 'bg-[#D1FAE5] text-[#065F46]' :
+                      order.status === 'pending' ? 'bg-[#FEF3C7] text-[#92400E]' :
+                      'bg-[#FEE2E2] text-[#991B1B]'
+                    }`}>
+                      {order.status}
+                    </span>
+                    <span className="text-[11px] text-[#999] w-20 text-right">{order.time}</span>
+                  </div>
+                </Link>
+              ))
+            )}
+          </div>
+        </div>
           </div>
         </div>
 
@@ -109,15 +125,27 @@ export default function AdminDashboard() {
               <h2 className="text-[14px] font-medium">System Status</h2>
             </div>
             <div className="p-4 space-y-3">
-              {Object.entries(syncStatus).map(([system, data]) => (
-                <div key={system} className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <span className={`w-2 h-2 rounded-full ${data.status === 'connected' ? 'bg-[#10B981]' : 'bg-[#EF4444]'}`} />
-                    <span className="text-[13px] capitalize">{system}</span>
-                  </div>
-                  <span className="text-[11px] text-[#666]">{data.lastSync}</span>
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <span className="w-2 h-2 rounded-full bg-[#10B981]" />
+                  <span className="text-[13px]">Shopify</span>
                 </div>
-              ))}
+                <span className="text-[11px] text-[#666]">Connected</span>
+              </div>
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <span className="w-2 h-2 rounded-full bg-[#10B981]" />
+                  <span className="text-[13px]">Odoo</span>
+                </div>
+                <span className="text-[11px] text-[#666]">Connected</span>
+              </div>
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <span className="w-2 h-2 rounded-full bg-[#10B981]" />
+                  <span className="text-[13px]">Supabase</span>
+                </div>
+                <span className="text-[11px] text-[#666]">Real-time</span>
+              </div>
             </div>
           </div>
 
@@ -130,17 +158,23 @@ export default function AdminDashboard() {
               </Link>
             </div>
             <div className="divide-y divide-[#E5E5E5]">
-              {alerts.map((alert, i) => (
-                <div key={i} className="p-4">
-                  <div className="flex items-start gap-2">
-                    <AlertTriangle className={`h-4 w-4 mt-0.5 flex-shrink-0 ${alert.type === 'warning' ? 'text-[#F59E0B]' : 'text-[#3B82F6]'}`} />
-                    <div>
-                      <p className="text-[12px] text-[#1a1a1a] leading-relaxed">{alert.message}</p>
-                      <p className="text-[11px] text-[#999] mt-1">{alert.time}</p>
+              {alerts.length === 0 ? (
+                <div className="p-4 text-center text-[12px] text-[#666]">
+                  No alerts
+                </div>
+              ) : (
+                alerts.map((alert, i) => (
+                  <div key={i} className="p-4">
+                    <div className="flex items-start gap-2">
+                      <AlertTriangle className={`h-4 w-4 mt-0.5 flex-shrink-0 ${alert.type === 'warning' ? 'text-[#F59E0B]' : 'text-[#3B82F6]'}`} />
+                      <div>
+                        <p className="text-[12px] text-[#1a1a1a] leading-relaxed">{alert.message}</p>
+                        <p className="text-[11px] text-[#999] mt-1">{alert.time}</p>
+                      </div>
                     </div>
                   </div>
-                </div>
-              ))}
+                ))
+              )}
             </div>
           </div>
         </div>
