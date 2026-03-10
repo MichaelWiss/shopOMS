@@ -1,5 +1,4 @@
 import Link from 'next/link'
-import { Search, Filter, Download, RefreshCw } from 'lucide-react'
 import { getOrderMappings } from '@/lib/supabase/order-mappings'
 
 export default async function OrdersPage() {

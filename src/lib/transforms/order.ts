@@ -134,20 +134,4 @@ export async function transformShopifyOrderToOdoo(
   }
 }
 
-/**
- * Calculate order totals for validation
- */
-export function calculateOrderTotals(shopifyOrder: ShopifyOrderWebhook) {
-  const subtotal = parseFloat(shopifyOrder.subtotal_price)
-  const tax = parseFloat(shopifyOrder.total_tax)
-  const total = parseFloat(shopifyOrder.total_price)
-  const discount = parseFloat(shopifyOrder.total_discounts)
 
-  return {
-    subtotal,
-    tax,
-    total,
-    discount,
-    itemCount: shopifyOrder.line_items.reduce((sum, item) => sum + item.quantity, 0),
-  }
-}

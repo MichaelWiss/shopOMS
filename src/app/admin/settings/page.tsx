@@ -7,9 +7,9 @@ const connections = {
     status: 'connected',
     lastChecked: '2 min ago',
     config: {
-      store: 'pressandco.myshopify.com',
+      store: 'press-company.myshopify.com',
       apiVersion: '2026-01',
-      webhooks: ['orders/create', 'orders/updated', 'products/update', 'inventory_levels/update'],
+      webhooks: ['orders/create', 'orders/cancelled', 'inventory_levels/update'],
     },
   },
   odoo: {
@@ -18,8 +18,8 @@ const connections = {
     status: 'connected',
     lastChecked: '2 min ago',
     config: {
-      url: 'https://pressandco.odoo.com',
-      database: 'pressandco-prod',
+      url: 'https://press-co.odoo.com',
+      database: 'press-co',
       version: '17.0',
     },
   },
@@ -29,19 +29,19 @@ const connections = {
     status: 'connected',
     lastChecked: 'Real-time',
     config: {
-      project: 'pressandco-oms',
+      project: 'press-co-oms',
       region: 'us-east-1',
-      tables: ['sync_events', 'order_mappings', 'product_mappings'],
+      tables: ['sync_events', 'order_mappings'],
     },
   },
-  redis: {
-    name: 'Redis',
-    description: 'BullMQ Job Queue',
+  inngest: {
+    name: 'Inngest',
+    description: 'Serverless Job Queue',
     status: 'connected',
-    lastChecked: '2 min ago',
+    lastChecked: 'Real-time',
     config: {
-      host: 'redis.internal',
-      queues: ['orders', 'products', 'inventory'],
+      functions: ['order-sync', 'inventory-sync', 'fulfillment-sync'],
+      mode: 'cloud',
     },
   },
 }
@@ -65,13 +65,13 @@ export default function SettingsPage() {
                     key === 'shopify' ? 'bg-[#95BF47]/10' :
                     key === 'odoo' ? 'bg-[#714B67]/10' :
                     key === 'supabase' ? 'bg-[#3ECF8E]/10' :
-                    'bg-[#DC382D]/10'
+                    'bg-[#6366F1]/10'
                   }`}>
                     <span className={`text-[14px] font-bold ${
                       key === 'shopify' ? 'text-[#95BF47]' :
                       key === 'odoo' ? 'text-[#714B67]' :
                       key === 'supabase' ? 'text-[#3ECF8E]' :
-                      'text-[#DC382D]'
+                      'text-[#6366F1]'
                     }`}>
                       {conn.name[0]}
                     </span>
@@ -148,8 +148,9 @@ export default function SettingsPage() {
                 { name: 'NEXT_PUBLIC_SUPABASE_URL', value: 'https://••••••.supabase.co', set: true },
                 { name: 'NEXT_PUBLIC_SUPABASE_ANON_KEY', value: '••••••••••••••••', set: true },
                 { name: 'SUPABASE_SERVICE_ROLE_KEY', value: '••••••••••••••••', set: true },
+                { name: 'INNGEST_EVENT_KEY', value: '••••••••••••••••', set: true },
+                { name: 'INNGEST_SIGNING_KEY', value: '••••••••••••••••', set: true },
                 { name: 'ADMIN_API_KEY', value: '••••••••••••••••', set: true },
-                { name: 'REDIS_URL', value: 'redis://••••••:6379', set: true },
               ].map((env) => (
                 <tr key={env.name} className="hover:bg-[#FAFAFA]">
                   <td className="px-4 py-3 text-[12px] font-mono text-[#1a1a1a]">{env.name}</td>

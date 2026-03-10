@@ -87,6 +87,7 @@ describe('Order Transformation Utilities', () => {
           email: 'john@example.com',
           first_name: 'John',
           last_name: 'Doe',
+          phone: null,
         },
       }
 
@@ -104,8 +105,14 @@ describe('Order Transformation Utilities', () => {
           first_name: 'Jane',
           last_name: 'Smith',
           address1: '123 Main St',
+          address2: null,
           city: 'Boston',
+          province: 'MA',
+          province_code: 'MA',
+          country: 'United States',
+          country_code: 'US',
           zip: '02101',
+          phone: null,
         },
       }
 

@@ -1,56 +1,21 @@
-import { NextRequest, NextResponse } from 'next/server'
-import { verifyWebhookSignature, extractWebhookMetadata } from '@/lib/shopify/webhooks'
-import { createSyncEvent } from '@/lib/supabase/sync-events'
-import { inngest } from '@/lib/inngest/client'
-import { rateLimiters, getClientIp } from '@/lib/rate-limit'
+import { NextRequest } from 'next/server'
+import { handleShopifyWebhook } from '@/lib/shopify/webhook-handler'
 import type { ShopifyInventoryWebhook } from '@/types/shopify'
 
 export async function POST(request: NextRequest) {
-  // Rate limit webhooks
-  const ip = getClientIp(request.headers)
-  const rateLimit = rateLimiters.webhook(ip)
-  if (!rateLimit.success) {
-    return NextResponse.json({ error: 'Rate limit exceeded' }, { status: 429 })
-  }
-
-  try {
-    const rawBody = await request.text()
-    const metadata = extractWebhookMetadata(request.headers)
-
-    if (!verifyWebhookSignature(rawBody, metadata.hmacSha256)) {
-      return NextResponse.json({ error: 'Invalid signature' }, { status: 401 })
-    }
-
-    const inventoryPayload: ShopifyInventoryWebhook = JSON.parse(rawBody)
-
-    console.log(`[Webhook] Inventory updated: item ${inventoryPayload.inventory_item_id}, qty: ${inventoryPayload.available}`)
-
-    const syncEvent = await createSyncEvent({
-      type: 'inventory',
-      direction: 'shopify_to_odoo',
-      status: 'pending',
-      shopify_id: inventoryPayload.inventory_item_id.toString(),
-      source_payload: inventoryPayload as unknown as Record<string, unknown>,
-      webhook_id: metadata.webhookId || undefined,
-    })
-
-    if (!syncEvent) {
-      return NextResponse.json({ error: 'Failed to log event' }, { status: 500 })
-    }
-
-    await inngest.send({
-      name: 'shop-oms/inventory.sync',
-      data: {
-        type: 'inventory_update',
-        inventoryData: inventoryPayload as unknown as Record<string, unknown>,
-        syncEventId: syncEvent.id!,
-        webhookId: metadata.webhookId || '',
-      },
-    })
-
-    return NextResponse.json({ success: true, syncEventId: syncEvent.id })
-  } catch (error) {
-    console.error('[Webhook] Error processing inventory/update:', error)
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
-  }
+  return handleShopifyWebhook(request, {
+    syncType: 'inventory',
+    inngestEvent: 'shop-oms/inventory.sync',
+    logLabel: 'Inventory updated',
+    extractShopifyId: (p) => {
+      const inv = p as unknown as ShopifyInventoryWebhook
+      return inv.inventory_item_id.toString()
+    },
+    buildEventData: (payload, syncEventId, webhookId) => ({
+      type: 'inventory_update',
+      inventoryData: payload,
+      syncEventId,
+      webhookId,
+    }),
+  })
 }
