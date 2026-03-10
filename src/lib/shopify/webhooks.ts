@@ -16,25 +16,20 @@ export function verifyWebhookSignature(
   const body = typeof rawBody === 'string' ? rawBody : rawBody.toString('utf8')
   const secret = shopifyEnv.SHOPIFY_CLIENT_SECRET
   
-  // Debug: log secret length and prefix (never log full secret!)
-  console.log(`[Webhook Debug] Secret length: ${secret.length}, prefix: ${secret.substring(0, 8)}...`)
-  console.log(`[Webhook Debug] Received signature: ${signature.substring(0, 20)}...`)
-  
   const hmac = crypto.createHmac('sha256', secret)
   hmac.update(body, 'utf8')
   const computedSignature = hmac.digest('base64')
-  
-  console.log(`[Webhook Debug] Computed signature: ${computedSignature.substring(0, 20)}...`)
+
+  // All debug in one line to avoid Vercel log truncation
+  console.log(`[Webhook Debug] secretLen=${secret.length} secretPrefix=${secret.substring(0, 8)} bodyLen=${body.length} received=${signature} computed=${computedSignature}`)
 
   try {
-    const isValid = crypto.timingSafeEqual(
+    return crypto.timingSafeEqual(
       Buffer.from(signature),
       Buffer.from(computedSignature)
     )
-    console.log(`[Webhook Debug] Signature valid: ${isValid}`)
-    return isValid
-  } catch (e) {
-    console.error(`[Webhook Debug] timingSafeEqual error:`, e)
+  } catch {
+    console.error(`[Webhook Debug] Buffer length mismatch - signatures different lengths`)
     return false
   }
 }
