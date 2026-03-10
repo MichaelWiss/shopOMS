@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { verifyWebhookSignature, extractWebhookMetadata } from '@/lib/shopify/webhooks'
 import { createSyncEvent } from '@/lib/supabase/sync-events'
-import { addOrderSyncJob } from '@/lib/queue'
+import { inngest } from '@/lib/inngest/client'
 import { rateLimiters, getClientIp } from '@/lib/rate-limit'
 import type { ShopifyOrderWebhook } from '@/types/shopify'
 
@@ -52,14 +52,17 @@ export async function POST(request: NextRequest) {
     }
 
     // Add to queue for processing
-    await addOrderSyncJob({
-      type: 'order_create',
-      shopifyOrder: orderPayload as unknown as Record<string, unknown>,
-      syncEventId: syncEvent.id!,
-      webhookId: metadata.webhookId || '',
+    await inngest.send({
+      name: 'shop-oms/order.sync',
+      data: {
+        type: 'order_create',
+        shopifyOrder: orderPayload as unknown as Record<string, unknown>,
+        syncEventId: syncEvent.id!,
+        webhookId: metadata.webhookId || '',
+      },
     })
 
-    console.log(`[Webhook] Queued order sync job: ${syncEvent.id}`)
+    console.log(`[Webhook] Sent order sync event: ${syncEvent.id}`)
 
     return NextResponse.json({
       success: true,

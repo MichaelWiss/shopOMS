@@ -1,6 +1,5 @@
 import { NextResponse } from 'next/server'
 import { checkHealth as checkOdoo } from '@/lib/odoo'
-import { getQueueStats } from '@/lib/queue'
 import { getSyncStats } from '@/lib/supabase'
 
 export async function GET() {
@@ -14,17 +13,6 @@ export async function GET() {
       : { status: 'error', message: 'Failed to authenticate' }
   } catch (error) {
     checks.odoo = {
-      status: 'error',
-      message: error instanceof Error ? error.message : 'Unknown error',
-    }
-  }
-
-  // Check queue stats
-  try {
-    const queueStats = await getQueueStats()
-    checks.queues = { status: 'ok', data: queueStats }
-  } catch (error) {
-    checks.queues = {
       status: 'error',
       message: error instanceof Error ? error.message : 'Unknown error',
     }

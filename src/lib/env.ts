@@ -30,8 +30,9 @@ const supabaseSchema = z.object({
   SUPABASE_SERVICE_ROLE_KEY: z.string().min(1, 'SUPABASE_SERVICE_ROLE_KEY is required'),
 })
 
-const redisSchema = z.object({
-  REDIS_URL: z.string().min(1, 'REDIS_URL is required'),
+const inngestSchema = z.object({
+  INNGEST_EVENT_KEY: z.string().min(1, 'INNGEST_EVENT_KEY is required'),
+  INNGEST_SIGNING_KEY: z.string().min(1, 'INNGEST_SIGNING_KEY is required'),
 })
 
 const adminSchema = z.object({
@@ -92,8 +93,9 @@ export const supabaseEnv = createLazyEnv(supabaseSchema, () => ({
 /**
  * Validated Redis environment variables.
  */
-export const redisEnv = createLazyEnv(redisSchema, () => ({
-  REDIS_URL: process.env.REDIS_URL,
+export const inngestEnv = createLazyEnv(inngestSchema, () => ({
+  INNGEST_EVENT_KEY: process.env.INNGEST_EVENT_KEY,
+  INNGEST_SIGNING_KEY: process.env.INNGEST_SIGNING_KEY,
 }))
 
 /**

@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { verifyWebhookSignature, extractWebhookMetadata } from '@/lib/shopify/webhooks'
 import { createSyncEvent } from '@/lib/supabase/sync-events'
-import { addInventorySyncJob } from '@/lib/queue'
+import { inngest } from '@/lib/inngest/client'
 import { rateLimiters, getClientIp } from '@/lib/rate-limit'
 import type { ShopifyInventoryWebhook } from '@/types/shopify'
 
@@ -38,11 +38,14 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Failed to log event' }, { status: 500 })
     }
 
-    await addInventorySyncJob({
-      type: 'inventory_update',
-      inventoryData: inventoryPayload as unknown as Record<string, unknown>,
-      syncEventId: syncEvent.id!,
-      webhookId: metadata.webhookId || '',
+    await inngest.send({
+      name: 'shop-oms/inventory.sync',
+      data: {
+        type: 'inventory_update',
+        inventoryData: inventoryPayload as unknown as Record<string, unknown>,
+        syncEventId: syncEvent.id!,
+        webhookId: metadata.webhookId || '',
+      },
     })
 
     return NextResponse.json({ success: true, syncEventId: syncEvent.id })

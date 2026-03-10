@@ -11,16 +11,14 @@
     "test:run": "vitest run",
     "test:coverage": "vitest run --coverage",
     "db:push": "npx supabase db push",
-    "db:generate": "npx supabase gen types typescript --local > src/types/supabase.ts",
-    "worker": "tsx src/lib/queue/worker.ts"
+    "db:generate": "npx supabase gen types typescript --local > src/types/supabase.ts"
   },
   "dependencies": {
     "@shopify/shopify-api": "^11.0.0",
     "@supabase/supabase-js": "^2.45.0",
-    "bullmq": "^5.12.0",
     "clsx": "^2.1.1",
     "date-fns": "^3.6.0",
-    "ioredis": "^5.4.1",
+    "inngest": "^3.52.6",
     "lucide-react": "^0.400.0",
     "next": "^16.1.6",
     "react": "^19.0.0",
