@@ -176,3 +176,38 @@ export async function getFailedSyncsForRetry(): Promise<SyncEvent[]> {
 
   return data || []
 }
+
+export async function getSyncEventById(id: string): Promise<SyncEvent | null> {
+  const supabase = createServerClient()
+
+  const { data, error } = await supabase
+    .from(TABLE_NAME)
+    .select('*')
+    .eq('id', id)
+    .single()
+
+  if (error) {
+    console.error('Failed to fetch sync event:', error)
+    return null
+  }
+
+  return data
+}
+
+export async function getFailedSyncEvents(): Promise<SyncEvent[]> {
+  const supabase = createServerClient()
+
+  const { data, error } = await supabase
+    .from(TABLE_NAME)
+    .select('*')
+    .in('status', ['failed', 'retry'])
+    .order('created_at', { ascending: false })
+    .limit(50)
+
+  if (error) {
+    console.error('Failed to fetch failed sync events:', error)
+    return []
+  }
+
+  return data || []
+}

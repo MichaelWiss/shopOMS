@@ -75,6 +75,36 @@ CREATE POLICY "Authenticated users can read" ON sync_events
   FOR SELECT
   USING (auth.role() = 'authenticated');
 
+-- Order ID Mappings (Shopify ↔ Odoo)
+CREATE TABLE IF NOT EXISTS order_mappings (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  shopify_order_id TEXT UNIQUE NOT NULL,
+  shopify_order_number TEXT,
+  odoo_order_id INTEGER,
+  odoo_order_name TEXT,
+  status TEXT DEFAULT 'pending' CHECK (status IN ('pending', 'synced', 'cancelled', 'failed')),
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  synced_at TIMESTAMPTZ
+);
+
+CREATE INDEX idx_order_mappings_shopify_id ON order_mappings(shopify_order_id);
+CREATE INDEX idx_order_mappings_odoo_id ON order_mappings(odoo_order_id);
+CREATE INDEX idx_order_mappings_status ON order_mappings(status);
+
+-- RLS for order_mappings
+ALTER TABLE order_mappings ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "Service role full access" ON order_mappings
+  FOR ALL
+  USING (auth.role() = 'service_role')
+  WITH CHECK (auth.role() = 'service_role');
+
+CREATE POLICY "Authenticated users can read" ON order_mappings
+  FOR SELECT
+  USING (auth.role() = 'authenticated');
+
+-- Trigger for updated_at on order_mappings is not needed (no updated_at column)
+
 -- View for stats
 CREATE OR REPLACE VIEW sync_stats AS
 SELECT

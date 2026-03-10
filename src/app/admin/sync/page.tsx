@@ -1,5 +1,6 @@
-import { Search, RefreshCw, CheckCircle, AlertTriangle, Clock, Filter } from 'lucide-react'
+import { Search, CheckCircle, AlertTriangle, Clock } from 'lucide-react'
 import { getSyncEvents, getSyncStats } from '@/lib/supabase/sync-events'
+import { RetryAllButton, RetryButton } from '@/components/SyncActions'
 import type { SyncEvent, SyncStats } from '@/types/sync'
 
 export const revalidate = 10 // Revalidate every 10 seconds
@@ -64,10 +65,7 @@ export default async function SyncPage() {
           <button className="flex items-center gap-2 border border-[#E5E5E5] bg-white px-3 py-2 text-[13px] rounded hover:bg-[#FAFAFA] transition-colors">
             Clear Logs
           </button>
-          <button className="flex items-center gap-2 bg-[#1a1a1a] text-white px-4 py-2 text-[13px] rounded hover:bg-[#333] transition-colors">
-            <RefreshCw className="h-4 w-4" />
-            Retry Failed
-          </button>
+          <RetryAllButton />
         </div>
       </div>
 
@@ -165,12 +163,13 @@ export default async function SyncPage() {
               <th className="text-left px-4 py-3 text-[11px] font-medium text-[#666] uppercase tracking-wide">Duration</th>
               <th className="text-left px-4 py-3 text-[11px] font-medium text-[#666] uppercase tracking-wide">Status</th>
               <th className="text-left px-4 py-3 text-[11px] font-medium text-[#666] uppercase tracking-wide">Timestamp</th>
+              <th className="text-left px-4 py-3 text-[11px] font-medium text-[#666] uppercase tracking-wide"></th>
             </tr>
           </thead>
           <tbody className="divide-y divide-[#E5E5E5]">
             {events.length === 0 ? (
               <tr>
-                <td colSpan={7} className="px-4 py-8 text-center text-[13px] text-[#666]">
+                <td colSpan={8} className="px-4 py-8 text-center text-[13px] text-[#666]">
                   No sync events yet. Events will appear here when webhooks are triggered.
                 </td>
               </tr>
@@ -213,6 +212,11 @@ export default async function SyncPage() {
                     </div>
                   </td>
                   <td className="px-4 py-3 text-[11px] text-[#666]">{formatTimestamp(event.created_at)}</td>
+                  <td className="px-4 py-3">
+                    {(event.status === 'failed' || event.status === 'retry') && event.id && (
+                      <RetryButton syncEventId={event.id} />
+                    )}
+                  </td>
                 </tr>
               ))
             )}

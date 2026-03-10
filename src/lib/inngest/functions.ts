@@ -2,6 +2,7 @@ import { inngest } from './client'
 import { transformShopifyOrderToOdoo } from '@/lib/transforms/order'
 import { createSaleOrder, findOrderByShopifyId, cancelSaleOrder } from '@/lib/odoo/orders'
 import { updateSyncStatus } from '@/lib/supabase/sync-events'
+import { upsertOrderMapping } from '@/lib/supabase/order-mappings'
 import type { ShopifyOrderWebhook } from '@/types/shopify'
 
 // --- Order Sync Function ---
@@ -30,6 +31,15 @@ export const orderSync = inngest.createFunction(
         })
 
         if (existingOrder) {
+          await step.run('save-mapping-duplicate', async () => {
+            await upsertOrderMapping({
+              shopify_order_id: order.admin_graphql_api_id || order.id.toString(),
+              shopify_order_number: order.name,
+              odoo_order_id: existingOrder.id,
+              status: 'synced',
+            })
+          })
+
           await step.run('log-duplicate', async () => {
             await updateSyncStatus(syncEventId, 'success', {
               odoo_id: existingOrder.id,
@@ -49,6 +59,15 @@ export const orderSync = inngest.createFunction(
             transformed.orderLines,
             transformed.metadata
           )
+        })
+
+        await step.run('save-mapping', async () => {
+          await upsertOrderMapping({
+            shopify_order_id: order.admin_graphql_api_id || order.id.toString(),
+            shopify_order_number: order.name,
+            odoo_order_id: odooOrderId,
+            status: 'synced',
+          })
         })
 
         await step.run('log-success', async () => {
@@ -75,6 +94,15 @@ export const orderSync = inngest.createFunction(
           const odooId = existing.id
           await step.run('cancel-in-odoo', async () => {
             await cancelSaleOrder(odooId)
+          })
+
+          await step.run('save-mapping-cancelled', async () => {
+            await upsertOrderMapping({
+              shopify_order_id: cancelOrder.admin_graphql_api_id || cancelOrder.id.toString(),
+              shopify_order_number: cancelOrder.name,
+              odoo_order_id: odooId,
+              status: 'cancelled',
+            })
           })
 
           await step.run('log-cancelled', async () => {
