@@ -9,19 +9,14 @@ export function verifyWebhookSignature(
   signature: string | null
 ): boolean {
   if (!signature) {
-    console.error('[Webhook] No signature provided')
     return false
   }
 
   const body = typeof rawBody === 'string' ? rawBody : rawBody.toString('utf8')
-  const secret = shopifyEnv.SHOPIFY_CLIENT_SECRET
   
-  const hmac = crypto.createHmac('sha256', secret)
+  const hmac = crypto.createHmac('sha256', shopifyEnv.SHOPIFY_CLIENT_SECRET)
   hmac.update(body, 'utf8')
   const computedSignature = hmac.digest('base64')
-
-  // All debug in one line to avoid Vercel log truncation
-  console.log(`[Webhook Debug] secretLen=${secret.length} secretPrefix=${secret.substring(0, 8)} bodyLen=${body.length} received=${signature} computed=${computedSignature}`)
 
   try {
     return crypto.timingSafeEqual(
@@ -29,7 +24,6 @@ export function verifyWebhookSignature(
       Buffer.from(computedSignature)
     )
   } catch {
-    console.error(`[Webhook Debug] Buffer length mismatch - signatures different lengths`)
     return false
   }
 }
