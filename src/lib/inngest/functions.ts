@@ -3,13 +3,26 @@ import { transformShopifyOrderToOdoo } from '@/lib/transforms/order'
 import { createSaleOrder, findOrderByShopifyId, cancelSaleOrder } from '@/lib/odoo/orders'
 import { updateSyncStatus } from '@/lib/supabase/sync-events'
 import { upsertOrderMapping } from '@/lib/supabase/order-mappings'
+import { alertSyncFailure, alertHealthDegraded, alertFailedSyncBacklog } from '@/lib/alerts'
+import { checkHealth as checkOdoo } from '@/lib/odoo'
+import { getFailedSyncEvents } from '@/lib/supabase/sync-events'
 import type { ShopifyOrderWebhook } from '@/types/shopify'
+
+// --- Shared onFailure handler ---
+async function handleFunctionFailure({ event, error }: { event: { data: Record<string, unknown> }; error: Error }) {
+  await alertSyncFailure(
+    (event.data.functionId as string) || 'unknown',
+    error,
+    { syncEventId: event.data.syncEventId, type: event.data.type },
+  )
+}
 
 // --- Order Sync Function ---
 export const orderSync = inngest.createFunction(
   {
     id: 'order-sync',
     retries: 5,
+    onFailure: handleFunctionFailure,
   },
   { event: 'shop-oms/order.sync' },
   async ({ event, step }) => {
@@ -145,6 +158,7 @@ export const inventorySync = inngest.createFunction(
   {
     id: 'inventory-sync',
     retries: 3,
+    onFailure: handleFunctionFailure,
   },
   { event: 'shop-oms/inventory.sync' },
   async ({ event, step }) => {
@@ -174,6 +188,7 @@ export const fulfillmentSync = inngest.createFunction(
   {
     id: 'fulfillment-sync',
     retries: 5,
+    onFailure: handleFunctionFailure,
   },
   { event: 'shop-oms/fulfillment.sync' },
   async ({ event, step }) => {
@@ -198,4 +213,39 @@ export const fulfillmentSync = inngest.createFunction(
   }
 )
 
-export const functions = [orderSync, inventorySync, fulfillmentSync]
+// --- Health Check Cron ---
+export const healthCheck = inngest.createFunction(
+  { id: 'health-check' },
+  { cron: '*/15 * * * *' },
+  async ({ step }) => {
+    const odooStatus = await step.run('check-odoo', async () => {
+      try {
+        const healthy = await checkOdoo()
+        return { status: healthy ? 'ok' : 'error', message: healthy ? undefined : 'Auth failed' } as const
+      } catch (err) {
+        return { status: 'error' as const, message: err instanceof Error ? err.message : 'Unknown error' }
+      }
+    })
+
+    const failedEvents = await step.run('check-failed-syncs', async () => {
+      const events = await getFailedSyncEvents()
+      return events.length
+    })
+
+    if (odooStatus.status !== 'ok') {
+      await step.run('alert-health', async () => {
+        await alertHealthDegraded({ odoo: odooStatus })
+      })
+    }
+
+    if (failedEvents > 0) {
+      await step.run('alert-backlog', async () => {
+        await alertFailedSyncBacklog(failedEvents)
+      })
+    }
+
+    return { odoo: odooStatus, failedSyncBacklog: failedEvents }
+  }
+)
+
+export const functions = [orderSync, inventorySync, fulfillmentSync, healthCheck]

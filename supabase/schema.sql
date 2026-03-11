@@ -53,7 +53,8 @@ BEGIN
   NEW.updated_at = NOW();
   RETURN NEW;
 END;
-$$ language 'plpgsql';
+$$ language 'plpgsql'
+SET search_path = '';
 
 -- Trigger for updated_at
 CREATE TRIGGER update_sync_events_updated_at
@@ -106,7 +107,8 @@ CREATE POLICY "Authenticated users can read" ON order_mappings
 -- Trigger for updated_at on order_mappings is not needed (no updated_at column)
 
 -- View for stats
-CREATE OR REPLACE VIEW sync_stats AS
+CREATE OR REPLACE VIEW sync_stats
+WITH (security_invoker = true) AS
 SELECT
   type,
   status,
