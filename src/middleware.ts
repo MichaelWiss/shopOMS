@@ -8,7 +8,7 @@ import { validateSession, compareSecrets } from '@/lib/session'
  * - API routes (/api/sync/*, /api/health) require Bearer token or x-api-key header
  * - Webhooks (/api/webhooks/*) are NOT protected here (HMAC verified in route)
  */
-export function middleware(request: NextRequest) {
+export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl
 
   // --- Protect API routes ---
@@ -45,7 +45,7 @@ export function middleware(request: NextRequest) {
       return NextResponse.next()
     }
 
-    if (!sessionToken || !validateSession(sessionToken)) {
+    if (!sessionToken || !(await validateSession(sessionToken))) {
       // Return a simple login page that POSTs to /api/auth/login
       return new NextResponse(
         `<!DOCTYPE html>

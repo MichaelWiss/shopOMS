@@ -127,8 +127,7 @@ supabase/
 npm install
 
 # Copy environment variables
-cp .env.example .env.local
-# Fill in all values (see Environment Variables below)
+
 
 # Start Next.js dev server
 npm run dev
@@ -139,34 +138,7 @@ npx inngest-cli@latest dev
 
 ### Environment Variables
 
-```env
-# Shopify
-SHOPIFY_STORE_DOMAIN=your-store.myshopify.com
-SHOPIFY_STOREFRONT_ACCESS_TOKEN=shpat_...
-SHOPIFY_CLIENT_ID=...
-SHOPIFY_CLIENT_SECRET=shpss_...
-SHOPIFY_API_VERSION=2026-01
-
-# Odoo
-ODOO_URL=https://your-instance.odoo.com
-ODOO_DB=your-db
-ODOO_USERNAME=user@example.com
-ODOO_API_KEY=...
-
-# Supabase
-NEXT_PUBLIC_SUPABASE_URL=https://xxx.supabase.co
-NEXT_PUBLIC_SUPABASE_ANON_KEY=eyJ...
-SUPABASE_SERVICE_ROLE_KEY=eyJ...
-
-# Admin
-ADMIN_API_KEY=<random 64-char hex string>
-
-# App
-NEXT_PUBLIC_APP_URL=http://localhost:3000
-
-# Optional
-SLACK_WEBHOOK_URL=https://hooks.slack.com/services/...
-```
+Copy `.env.example` to `.env.local` and fill in all values. See the example file for required variable names and descriptions.
 
 ## Webhook Flow
 

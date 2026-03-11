@@ -5,7 +5,7 @@ export async function POST(request: NextRequest) {
   const sessionToken = request.cookies.get('admin_session')?.value
 
   if (sessionToken) {
-    revokeSession(sessionToken)
+    await revokeSession(sessionToken)
   }
 
   const response = NextResponse.json({ success: true })
