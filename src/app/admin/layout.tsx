@@ -8,6 +8,7 @@ import {
   Settings,
   ChevronRight
 } from 'lucide-react'
+import { LogoutButton } from '@/components/LogoutButton'
 
 const navItems = [
   { href: '/admin', label: 'Dashboard', icon: LayoutDashboard },
@@ -48,6 +49,7 @@ export default function AdminLayout({
           <Link href="/" className="text-[12px] text-[#666] hover:text-white">
             View Store →
           </Link>
+          <LogoutButton />
         </div>
       </header>
 

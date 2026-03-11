@@ -1,0 +1,21 @@
+import { NextRequest, NextResponse } from 'next/server'
+import { revokeSession } from '@/lib/session'
+
+export async function POST(request: NextRequest) {
+  const sessionToken = request.cookies.get('admin_session')?.value
+
+  if (sessionToken) {
+    revokeSession(sessionToken)
+  }
+
+  const response = NextResponse.json({ success: true })
+  response.cookies.set('admin_session', '', {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === 'production',
+    sameSite: 'lax',
+    maxAge: 0,
+    path: '/admin',
+  })
+
+  return response
+}

@@ -1,9 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { validateSession, compareSecrets } from '@/lib/session'
 
 /**
  * Middleware to protect admin routes and sensitive API endpoints.
  * 
- * - Admin pages (/admin/*) require the ADMIN_API_KEY cookie
+ * - Admin pages (/admin/*) require a valid session cookie
  * - API routes (/api/sync/*, /api/health) require Bearer token or x-api-key header
  * - Webhooks (/api/webhooks/*) are NOT protected here (HMAC verified in route)
  */
@@ -17,8 +18,9 @@ export function middleware(request: NextRequest) {
     const apiKey = process.env.ADMIN_API_KEY
 
     if (!apiKey) {
+      console.error('ADMIN_API_KEY is not set')
       return NextResponse.json(
-        { error: 'Server misconfigured: ADMIN_API_KEY not set' },
+        { error: 'Internal server error' },
         { status: 500 }
       )
     }
@@ -26,7 +28,7 @@ export function middleware(request: NextRequest) {
     const token = authHeader?.startsWith('Bearer ') ? authHeader.slice(7) : null
     const providedKey = token || apiKeyHeader
 
-    if (providedKey !== apiKey) {
+    if (!providedKey || !compareSecrets(providedKey, apiKey)) {
       return NextResponse.json(
         { error: 'Unauthorized' },
         { status: 401 }
@@ -36,15 +38,14 @@ export function middleware(request: NextRequest) {
 
   // --- Protect Admin pages ---
   if (pathname.startsWith('/admin')) {
-    const adminCookie = request.cookies.get('admin_session')?.value
-    const apiKey = process.env.ADMIN_API_KEY
+    const sessionToken = request.cookies.get('admin_session')?.value
 
     // Skip protection if login page (allow the auth/login API)
     if (pathname === '/admin/login') {
       return NextResponse.next()
     }
 
-    if (!apiKey || adminCookie !== apiKey) {
+    if (!sessionToken || !validateSession(sessionToken)) {
       // Return a simple login page that POSTs to /api/auth/login
       return new NextResponse(
         `<!DOCTYPE html>

@@ -1,101 +1,124 @@
-# shopOMS - Shopify Order Management System
+# shopOMS — Shopify Order Management System
 
-A real-world middleware architecture connecting a headless Shopify storefront to Odoo ERP.
+A middleware OMS connecting a headless **Shopify** storefront to **Odoo** ERP for Press & Co, a bespoke letterpress business card company.
 
 ## Architecture
 
 ```
-┌─────────────────┐     ┌─────────────────┐     ┌─────────────────┐
-│   Next.js       │     │   Middleware    │     │     Odoo        │
-│   Storefront    │────▶│   (API Routes)  │────▶│     ERP         │
-└─────────────────┘     └────────┬────────┘     └─────────────────┘
-                                 │
-                        ┌────────▼────────┐
-                        │    Supabase     │
-                        │  (Sync Logs)    │
-                        └─────────────────┘
+┌─────────────────┐     Webhooks      ┌─────────────────┐
+│     Shopify      │ ───────────────▶ │   Next.js App   │
+│   (Storefront)   │                  │  /api/webhooks   │
+└─────────────────┘                   └────────┬────────┘
+                                               │
+                                               ▼
+┌─────────────────┐                   ┌─────────────────┐
+│    Supabase      │ ◀──── Logs ───── │    Inngest       │
+│  (Event Logs)    │                  │  (Job Queue)     │
+└─────────────────┘                   └────────┬────────┘
+                                               │
+                                               ▼
+                                      ┌─────────────────┐
+                                      │      Odoo        │
+                                      │     (ERP)        │
+                                      └─────────────────┘
 ```
 
 ## Tech Stack
 
 | Layer | Technology | Purpose |
 |-------|------------|---------|
-| Storefront | Next.js 15 | Headless commerce frontend |
-| API | Next.js API Routes | Webhook handlers, data transforms |
-| Queue | BullMQ + Redis | Job queue for reliable syncs |
-| Database | Supabase (PostgreSQL) | Sync logs, analytics, caching |
-| OMS/ERP | Odoo | Order management, inventory |
-| Auth | Shopify OAuth | Store authentication |
+| Storefront | Next.js 16 (App Router) | Headless commerce frontend |
+| API | Next.js API Routes | Webhook handlers, auth, health checks |
+| Queue | Inngest | Serverless job queue with retries |
+| Database | Supabase (PostgreSQL) | Sync event logs, order mappings |
+| ERP | Odoo (XML-RPC) | Order management, inventory, customers |
+| Hosting | Vercel | Production deployment |
 
 ## Features
 
 ### Storefront
-- [ ] Product listing with Shopify Storefront API
-- [ ] Product detail pages
-- [ ] Cart management
-- [ ] Shopify Checkout integration
-- [ ] Customer account pages
+- [x] Product listing via Shopify Storefront API
+- [x] Product detail pages with variants
+- [x] Cart management (add, update, remove)
+- [x] Shopify Checkout integration
+- [x] Static pages (About, FAQ, Shipping, Privacy, Terms, Contact)
 
 ### Middleware
-- [ ] Webhook receiver (orders, inventory, fulfillments)
-- [ ] Webhook signature verification
-- [ ] Data transformation (Shopify → Odoo format)
-- [ ] Retry logic with exponential backoff
-- [ ] Dead letter queue for failed syncs
-- [ ] Rate limit handling
+- [x] Webhook receiver (orders/create, orders/cancelled, inventory/update)
+- [x] HMAC-SHA256 webhook signature verification
+- [x] Data transformation (Shopify → Odoo format)
+- [x] Retry logic (built into Inngest, 3–5 retries per function)
+- [x] Rate limiting on webhooks, login, and API endpoints
+- [x] Order customization extraction (line item properties → Odoo notes)
 
 ### Integrations
-- [ ] Odoo order creation
-- [ ] Odoo inventory sync
-- [ ] Odoo customer sync
-- [ ] Fulfillment status sync (Odoo → Shopify)
+- [x] Odoo order creation (`sale.order`)
+- [x] Odoo customer sync (`res.partner` — get or create)
+- [x] Odoo order cancellation
+- [x] Shopify Admin API (client credentials token with auto-refresh)
+- [ ] Inventory sync (stub — needs SKU-based product mapping)
+- [ ] Fulfillment sync (stub — needs delivery order logic)
 
 ### Observability
-- [ ] Sync event logging
-- [ ] Error tracking
-- [ ] Analytics dashboard
-- [ ] Health checks
+- [x] Sync event logging to Supabase
+- [x] Admin dashboard with real-time stats
+- [x] Health check endpoint (`/api/health`)
+- [x] Monitoring cron (Inngest, every 15 min — checks Odoo + failed sync backlog)
+- [x] Alert system (console/Vercel logs + optional Slack)
+- [x] Manual retry from admin UI (single event or all failed)
+- [ ] Live sync event stream (Supabase Realtime)
 
 ## Project Structure
 
 ```
-shopOMS/
-├── src/
-│   ├── app/                    # Next.js App Router
-│   │   ├── (storefront)/       # Customer-facing pages
-│   │   │   ├── page.tsx        # Homepage
-│   │   │   ├── products/       # Product pages
-│   │   │   ├── cart/           # Cart page
-│   │   │   └── account/        # Customer account
-│   │   ├── api/                # API Routes (Middleware)
-│   │   │   ├── webhooks/       # Shopify webhook handlers
-│   │   │   │   ├── orders/
-│   │   │   │   ├── inventory/
-│   │   │   │   └── fulfillments/
-│   │   │   ├── sync/           # Manual sync endpoints
-│   │   │   └── health/         # Health checks
-│   │   └── admin/              # Admin dashboard
-│   ├── lib/
-│   │   ├── shopify/            # Shopify API client
-│   │   ├── odoo/               # Odoo XML-RPC client
-│   │   ├── supabase/           # Supabase client
-│   │   ├── queue/              # BullMQ job definitions
-│   │   └── transforms/         # Data transformers
-│   ├── components/             # React components
-│   └── types/                  # TypeScript types
-├── prisma/                     # Local schema (optional)
-├── docker-compose.yml          # Redis for local dev
-└── .env.example
+src/
+├── app/
+│   ├── (storefront)/           # Customer-facing pages
+│   │   ├── page.tsx            # Homepage with product grid
+│   │   ├── product/[handle]/   # Product detail page
+│   │   ├── cart/               # Cart page
+│   │   └── ...                 # About, FAQ, Shipping, etc.
+│   ├── admin/                  # OMS admin dashboard
+│   │   ├── page.tsx            # Dashboard overview
+│   │   ├── orders/             # Order management
+│   │   ├── products/           # Product sync status
+│   │   ├── inventory/          # Inventory levels
+│   │   ├── sync/               # Sync event logs
+│   │   └── settings/           # API connections
+│   ├── actions/                # Server actions (cart, sync retry)
+│   └── api/
+│       ├── auth/login/         # Admin login
+│       ├── health/             # Health check
+│       ├── inngest/            # Inngest serve route
+│       ├── sync/events/        # Sync events API
+│       └── webhooks/           # Shopify webhook handlers
+│           ├── orders/create/
+│           ├── orders/cancelled/
+│           └── inventory/update/
+├── components/                 # React components
+├── lib/
+│   ├── alerts.ts               # Alert dispatcher (console + Slack)
+│   ├── rate-limit.ts           # Rate limiting
+│   ├── env.ts                  # Validated env vars (Zod)
+│   ├── shopify/                # Storefront + Admin API clients
+│   ├── odoo/                   # XML-RPC client, orders, partners, products
+│   ├── supabase/               # DB client, sync events, order mappings
+│   ├── inngest/                # Job queue functions
+│   └── transforms/             # Shopify → Odoo data transforms
+├── types/                      # TypeScript types
+└── middleware.ts                # Auth protection for admin + API routes
+supabase/
+└── schema.sql                  # Database schema (sync_events, order_mappings)
 ```
 
 ## Getting Started
 
 ### Prerequisites
 - Node.js 20+
-- Docker (for Redis)
-- Shopify Partner account
-- Odoo account (free tier)
-- Supabase account (free tier)
+- Shopify store with Storefront API access
+- Odoo instance with API key
+- Supabase project
+- Inngest account (or use `npx inngest-cli@latest dev` locally)
 
 ### Installation
 
@@ -105,35 +128,63 @@ npm install
 
 # Copy environment variables
 cp .env.example .env.local
+# Fill in all values (see Environment Variables below)
 
-# Start Redis
-docker-compose up -d
-
-# Run database migrations
-npm run db:push
-
-# Start development server
+# Start Next.js dev server
 npm run dev
+
+# Start Inngest dev server (separate terminal)
+npx inngest-cli@latest dev
 ```
 
 ### Environment Variables
 
-See `.env.example` for required variables.
+```env
+# Shopify
+SHOPIFY_STORE_DOMAIN=your-store.myshopify.com
+SHOPIFY_STOREFRONT_ACCESS_TOKEN=shpat_...
+SHOPIFY_CLIENT_ID=...
+SHOPIFY_CLIENT_SECRET=shpss_...
+SHOPIFY_API_VERSION=2026-01
+
+# Odoo
+ODOO_URL=https://your-instance.odoo.com
+ODOO_DB=your-db
+ODOO_USERNAME=user@example.com
+ODOO_API_KEY=...
+
+# Supabase
+NEXT_PUBLIC_SUPABASE_URL=https://xxx.supabase.co
+NEXT_PUBLIC_SUPABASE_ANON_KEY=eyJ...
+SUPABASE_SERVICE_ROLE_KEY=eyJ...
+
+# Admin
+ADMIN_API_KEY=<random 64-char hex string>
+
+# App
+NEXT_PUBLIC_APP_URL=http://localhost:3000
+
+# Optional
+SLACK_WEBHOOK_URL=https://hooks.slack.com/services/...
+```
 
 ## Webhook Flow
 
 ```
-Shopify Order Created
+Shopify Event (e.g. Order Created)
+        │
+        ▼
+POST /api/webhooks/orders/create
         │
         ▼
 ┌───────────────────┐
-│ POST /api/webhooks│
-│ /orders/create    │
+│ Rate Limit Check  │──── Exceeded ──▶ 429
 └────────┬──────────┘
          │
          ▼
 ┌───────────────────┐
-│ Verify Signature  │──── Invalid ────▶ 401
+│ Verify HMAC       │──── Invalid ───▶ 401
+│ Signature         │
 └────────┬──────────┘
          │ Valid
          ▼
@@ -144,8 +195,8 @@ Shopify Order Created
          │
          ▼
 ┌───────────────────┐
-│ Add to BullMQ     │
-│ Queue             │
+│ Dispatch to       │
+│ Inngest Queue     │
 └────────┬──────────┘
          │
          ▼
@@ -164,9 +215,21 @@ Shopify Order Created
  Success    Fail
     │         │
     ▼         ▼
- Update    Retry with
- Log       Backoff
+ Update    Retry (up to 5x)
+ Supabase  then alert
 ```
+
+## Testing
+
+```bash
+npm test              # Watch mode
+npm run test:run      # Single run
+npm run test:coverage # With coverage
+```
+
+## Deployment
+
+Deployed on **Vercel** with Inngest integration. Webhooks are registered via Shopify Admin → Settings → Notifications.
 
 ## License
 

@@ -29,6 +29,18 @@ const securityHeaders = [
     key: 'Permissions-Policy',
     value: 'camera=(), microphone=(), geolocation=(), interest-cohort=()',
   },
+  {
+    key: 'Content-Security-Policy',
+    value: [
+      "default-src 'self'",
+      "script-src 'self' 'unsafe-inline'",
+      "style-src 'self' 'unsafe-inline'",
+      "img-src 'self' https://cdn.shopify.com data:",
+      "font-src 'self'",
+      "connect-src 'self' https://*.supabase.co https://*.myshopify.com",
+      "frame-ancestors 'none'",
+    ].join('; '),
+  },
 ]
 
 const nextConfig: NextConfig = {

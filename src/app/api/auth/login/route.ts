@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { rateLimiters, getClientIp } from '@/lib/rate-limit'
+import { createSession, compareSecrets } from '@/lib/session'
 
 export async function POST(request: NextRequest) {
   // Rate limit login attempts (5 per minute per IP)
@@ -24,8 +25,9 @@ export async function POST(request: NextRequest) {
   const apiKey = process.env.ADMIN_API_KEY
 
   if (!apiKey) {
+    console.error('ADMIN_API_KEY is not set')
     return NextResponse.json(
-      { error: 'Server misconfigured' },
+      { error: 'Internal server error' },
       { status: 500 }
     )
   }
@@ -33,15 +35,17 @@ export async function POST(request: NextRequest) {
   const body = await request.json()
   const { key } = body
 
-  if (!key || key !== apiKey) {
+  if (!key || !compareSecrets(key, apiKey)) {
     return NextResponse.json(
       { error: 'Invalid admin key' },
       { status: 401 }
     )
   }
 
+  const sessionToken = createSession()
+
   const response = NextResponse.json({ success: true })
-  response.cookies.set('admin_session', apiKey, {
+  response.cookies.set('admin_session', sessionToken, {
     httpOnly: true,
     secure: process.env.NODE_ENV === 'production',
     sameSite: 'lax',
