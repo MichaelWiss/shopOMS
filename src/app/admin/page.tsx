@@ -42,7 +42,7 @@ export default async function AdminDashboard() {
   const failedEvents = recentEvents.filter(e => e.status === 'failed').slice(0, 3)
   const alerts = failedEvents.map(e => ({
     type: 'warning' as const,
-    message: e.error_message || `${e.type} sync failed`,
+    message: (e.error_message || `${e.type} sync failed`).replace(/[<>&"']/g, c => ({'<':'&lt;','>':'&gt;','&':'&amp;','"':'&quot;',"'":'&#39;'}[c] || c)),
     time: e.created_at ? new Date(e.created_at).toLocaleTimeString() : '',
   }))
   return (

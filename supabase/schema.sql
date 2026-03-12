@@ -106,6 +106,23 @@ CREATE POLICY "Authenticated users can read" ON order_mappings
 
 -- Trigger for updated_at on order_mappings is not needed (no updated_at column)
 
+-- Admin Sessions Table
+CREATE TABLE IF NOT EXISTS admin_sessions (
+  hash TEXT PRIMARY KEY,
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- Auto-expire old sessions (cleanup via index for efficient deletion)
+CREATE INDEX idx_admin_sessions_created_at ON admin_sessions(created_at);
+
+-- RLS for admin_sessions
+ALTER TABLE admin_sessions ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "Service role full access" ON admin_sessions
+  FOR ALL
+  USING (auth.role() = 'service_role')
+  WITH CHECK (auth.role() = 'service_role');
+
 -- View for stats
 CREATE OR REPLACE VIEW sync_stats
 WITH (security_invoker = true) AS
@@ -119,3 +136,19 @@ FROM sync_events
 WHERE created_at > NOW() - INTERVAL '24 hours'
 GROUP BY type, status, DATE_TRUNC('hour', created_at)
 ORDER BY hour DESC;
+
+-- Rate Limit Entries Table (for multi-instance rate limiting)
+CREATE TABLE IF NOT EXISTS rate_limit_entries (
+  key TEXT PRIMARY KEY,
+  count INTEGER NOT NULL DEFAULT 0,
+  reset_at TIMESTAMPTZ NOT NULL
+);
+
+CREATE INDEX idx_rate_limit_entries_reset_at ON rate_limit_entries(reset_at);
+
+ALTER TABLE rate_limit_entries ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "Service role full access" ON rate_limit_entries
+  FOR ALL
+  USING (auth.role() = 'service_role')
+  WITH CHECK (auth.role() = 'service_role');

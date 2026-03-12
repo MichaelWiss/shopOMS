@@ -1,11 +1,26 @@
 'use server'
 
+import { cookies } from 'next/headers'
 import { inngest } from '@/lib/inngest/client'
 import { updateSyncStatus } from '@/lib/supabase/sync-events'
 import { getSyncEventById, getFailedSyncEvents } from '@/lib/supabase/sync-events'
+import { validateSession } from '@/lib/session'
 import { revalidatePath } from 'next/cache'
 
+async function requireAdmin(): Promise<{ authorized: true } | { authorized: false; error: string }> {
+  const cookieStore = await cookies()
+  const token = cookieStore.get('admin_session')?.value
+  if (!token || !(await validateSession(token))) {
+    return { authorized: false, error: 'Unauthorized' }
+  }
+  return { authorized: true }
+}
+
 export async function retrySyncEvent(syncEventId: string) {
+  const auth = await requireAdmin()
+  if (!auth.authorized) {
+    return { success: false, error: auth.error }
+  }
   const event = await getSyncEventById(syncEventId)
 
   if (!event) {
@@ -60,6 +75,11 @@ export async function retrySyncEvent(syncEventId: string) {
 }
 
 export async function retryAllFailed() {
+  const auth = await requireAdmin()
+  if (!auth.authorized) {
+    return { success: false, retried: 0, error: auth.error }
+  }
+
   const failedEvents = await getFailedSyncEvents()
 
   if (failedEvents.length === 0) {

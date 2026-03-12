@@ -1,5 +1,6 @@
 import { NextRequest } from 'next/server'
 import { handleShopifyWebhook } from '@/lib/shopify/webhook-handler'
+import { ShopifyInventoryWebhookSchema } from '@/lib/schemas'
 import type { ShopifyInventoryWebhook } from '@/types/shopify'
 
 export async function POST(request: NextRequest) {
@@ -7,6 +8,7 @@ export async function POST(request: NextRequest) {
     syncType: 'inventory',
     inngestEvent: 'shop-oms/inventory.sync',
     logLabel: 'Inventory updated',
+    schema: ShopifyInventoryWebhookSchema,
     extractShopifyId: (p) => {
       const inv = p as unknown as ShopifyInventoryWebhook
       return inv.inventory_item_id.toString()

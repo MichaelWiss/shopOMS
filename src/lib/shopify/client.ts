@@ -14,6 +14,9 @@ export async function shopifyStorefrontFetch<T>(
   const apiVersion = shopifyEnv.SHOPIFY_API_VERSION
   const endpoint = `https://${domain}/api/${apiVersion}/graphql.json`
 
+  const controller = new AbortController()
+  const timeout = setTimeout(() => controller.abort(), 15000)
+
   const response = await fetch(endpoint, {
     method: 'POST',
     headers: {
@@ -21,7 +24,8 @@ export async function shopifyStorefrontFetch<T>(
       'Shopify-Storefront-Private-Token': shopifyEnv.SHOPIFY_STOREFRONT_ACCESS_TOKEN,
     },
     body: JSON.stringify({ query, variables }),
-  })
+    signal: controller.signal,
+  }).finally(() => clearTimeout(timeout))
 
   if (!response.ok) {
     throw new Error(`Shopify Storefront API error: ${response.status} ${response.statusText}`)
@@ -51,6 +55,9 @@ export async function shopifyAdminFetch<T>(
 
   const accessToken = await getAdminAccessToken()
 
+  const controller = new AbortController()
+  const timeout = setTimeout(() => controller.abort(), 15000)
+
   const response = await fetch(endpoint, {
     method: 'POST',
     headers: {
@@ -58,7 +65,8 @@ export async function shopifyAdminFetch<T>(
       'X-Shopify-Access-Token': accessToken,
     },
     body: JSON.stringify({ query, variables }),
-  })
+    signal: controller.signal,
+  }).finally(() => clearTimeout(timeout))
 
   if (!response.ok) {
     throw new Error(`Shopify Admin API error: ${response.status} ${response.statusText}`)

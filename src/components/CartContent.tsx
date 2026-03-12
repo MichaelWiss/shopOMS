@@ -72,15 +72,17 @@ export function CartContent() {
                       className="px-3 py-1 text-[14px] hover:bg-[#f5f5f0] transition-colors"
                       onClick={() => updateQuantity(item.id, Math.max(1, item.quantity - 1))}
                       disabled={item.quantity <= 1}
+                      aria-label={`Decrease quantity of ${item.merchandise.product.title}`}
                     >
                       −
                     </button>
-                    <span className="px-3 py-1 text-[14px] border-x border-[#1a1a1a]/30 min-w-[40px] text-center">
+                    <span className="px-3 py-1 text-[14px] border-x border-[#1a1a1a]/30 min-w-[40px] text-center" aria-live="polite" aria-label={`Quantity: ${item.quantity}`}>
                       {item.quantity}
                     </span>
                     <button 
                       className="px-3 py-1 text-[14px] hover:bg-[#f5f5f0] transition-colors"
                       onClick={() => updateQuantity(item.id, item.quantity + 1)}
+                      aria-label={`Increase quantity of ${item.merchandise.product.title}`}
                     >
                       +
                     </button>
@@ -88,6 +90,7 @@ export function CartContent() {
                   <button 
                     className="text-[12px] text-[#1a1a1a]/60 underline hover:text-[#1a1a1a] transition-colors"
                     onClick={() => removeFromCart(item.id)}
+                    aria-label={`Remove ${item.merchandise.product.title} from cart`}
                   >
                     Remove
                   </button>

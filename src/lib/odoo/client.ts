@@ -28,6 +28,8 @@ let cachedUid: number | null = null
 /**
  * Authenticate with Odoo and get user ID
  */
+const ODOO_TIMEOUT_MS = 30000
+
 export async function authenticate(): Promise<number> {
   if (cachedUid) {
     return cachedUid
@@ -35,7 +37,9 @@ export async function authenticate(): Promise<number> {
 
   const { commonClient } = getClients()
   return new Promise((resolve, reject) => {
+    const timer = setTimeout(() => reject(new Error('Odoo authentication timed out')), ODOO_TIMEOUT_MS)
     commonClient.methodCall('authenticate', [odooEnv.ODOO_DB, odooEnv.ODOO_USERNAME, odooEnv.ODOO_API_KEY, {}], (error: any, uid: any) => {
+      clearTimeout(timer)
       if (error) {
         reject(new Error(`Odoo authentication failed: ${error?.message || error}`))
         return
@@ -63,10 +67,12 @@ export async function execute<T>(
   const { objectClient } = getClients()
 
   return new Promise((resolve, reject) => {
+    const timer = setTimeout(() => reject(new Error(`Odoo ${model}.${method} timed out`)), ODOO_TIMEOUT_MS)
     objectClient.methodCall(
       'execute_kw',
       [odooEnv.ODOO_DB, uid, odooEnv.ODOO_API_KEY, model, method, args, kwargs],
       (error: any, result: any) => {
+        clearTimeout(timer)
         if (error) {
           reject(new Error(`Odoo execute failed: ${error?.message || error}`))
           return

@@ -27,9 +27,9 @@ export function RetryButton({ syncEventId }: { syncEventId: string }) {
       onClick={() => startTransition(async () => { await retrySyncEvent(syncEventId) })}
       disabled={isPending}
       className="text-[11px] px-2 py-0.5 rounded bg-[#1a1a1a] text-white hover:bg-[#333] transition-colors disabled:opacity-50"
-      title="Retry this sync"
+      aria-label={`Retry sync event ${syncEventId.slice(0, 8)}`}
     >
-      {isPending ? <RefreshCw className="h-3 w-3 animate-spin" /> : 'Retry'}
+      {isPending ? <RefreshCw className="h-3 w-3 animate-spin" aria-label="Retrying" /> : 'Retry'}
     </button>
   )
 }

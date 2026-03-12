@@ -1,9 +1,13 @@
-import { Search, CheckCircle, AlertTriangle, Clock } from 'lucide-react'
+import { Suspense } from 'react'
+import { CheckCircle, AlertTriangle, Clock } from 'lucide-react'
 import { getSyncEvents, getSyncStats } from '@/lib/supabase/sync-events'
 import { RetryAllButton, RetryButton } from '@/components/SyncActions'
-import type { SyncEvent, SyncStats } from '@/types/sync'
+import { SyncFilters, SyncPagination } from '@/components/SyncFilters'
+import type { SyncEvent, SyncType, SyncStatus as SyncStatusType } from '@/types/sync'
 
-export const revalidate = 10 // Revalidate every 10 seconds
+export const revalidate = 10
+
+const PAGE_SIZE = 25
 
 function formatDirection(direction: string): string {
   const [source, target] = direction.split('_to_')
@@ -28,9 +32,13 @@ function formatTimestamp(date: string | undefined): string {
   })
 }
 
+function escapeHtml(str: string): string {
+  return str.replace(/[<>&"']/g, c => ({'<':'&lt;','>':'&gt;','&':'&amp;','"':'&quot;',"'":'&#39;'}[c] || c))
+}
+
 function getEventDetails(event: SyncEvent): string {
   if (event.error_message) {
-    return event.error_message.slice(0, 50) + (event.error_message.length > 50 ? '...' : '')
+    return escapeHtml(event.error_message.slice(0, 50) + (event.error_message.length > 50 ? '...' : ''))
   }
   if (event.odoo_id && event.shopify_id) {
     return `Shopify ${event.shopify_id.slice(-8)} → Odoo ${event.odoo_id}`
@@ -41,30 +49,76 @@ function getEventDetails(event: SyncEvent): string {
   return event.type
 }
 
-export default async function SyncPage() {
-  const [events, stats] = await Promise.all([
-    getSyncEvents({ limit: 50 }),
+const VALID_TYPES: SyncType[] = ['order', 'inventory', 'fulfillment', 'customer', 'product']
+const VALID_STATUSES: SyncStatusType[] = ['pending', 'processing', 'success', 'failed', 'retry']
+
+export default async function SyncPage({
+  searchParams,
+}: {
+  searchParams: Promise<Record<string, string | string[] | undefined>>
+}) {
+  const params = await searchParams
+  const typeFilter = VALID_TYPES.includes(params.type as SyncType) ? (params.type as SyncType) : undefined
+  const statusFilter = VALID_STATUSES.includes(params.status as SyncStatusType) ? (params.status as SyncStatusType) : undefined
+  const daysFilter = ['1', '7', '30'].includes(params.days as string) ? Number(params.days) : undefined
+  const searchQuery = typeof params.q === 'string' ? params.q.trim() : ''
+  const currentPage = Math.max(1, Number(params.page) || 1)
+
+  const startDate = daysFilter
+    ? new Date(Date.now() - daysFilter * 24 * 60 * 60 * 1000).toISOString()
+    : undefined
+
+  // Fetch a larger set when searching client-side by text
+  const fetchLimit = searchQuery ? 200 : PAGE_SIZE
+  const fetchOffset = searchQuery ? 0 : (currentPage - 1) * PAGE_SIZE
+
+  const [allEvents, stats] = await Promise.all([
+    getSyncEvents({
+      type: typeFilter,
+      status: statusFilter,
+      startDate,
+      limit: fetchLimit,
+      offset: fetchOffset,
+    }),
     getSyncStats(),
   ])
 
-  // Calculate today's stats
+  // Client-side text search filter (searches type, direction, shopify_id, error_message)
+  let events = allEvents
+  if (searchQuery) {
+    const q = searchQuery.toLowerCase()
+    events = allEvents.filter(
+      (e) =>
+        e.type?.toLowerCase().includes(q) ||
+        e.direction?.toLowerCase().includes(q) ||
+        e.shopify_id?.toLowerCase().includes(q) ||
+        e.error_message?.toLowerCase().includes(q) ||
+        e.webhook_id?.toLowerCase().includes(q),
+    )
+  }
+
+  // Paginate after text search
+  const totalEvents = events.length
+  const paginatedEvents = searchQuery
+    ? events.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE)
+    : events
+
+  // Calculate today's stats from all-time stats source
   const todayStart = new Date()
   todayStart.setHours(0, 0, 0, 0)
-  const todayEvents = events.filter(e => new Date(e.created_at!) >= todayStart)
+  const todayEvents = allEvents.filter(e => new Date(e.created_at!) >= todayStart)
   const todayStats = {
     total: todayEvents.length,
     success: todayEvents.filter(e => e.status === 'success').length,
     pending: todayEvents.filter(e => e.status === 'pending' || e.status === 'processing').length,
     errors: todayEvents.filter(e => e.status === 'failed').length,
   }
+
   return (
     <div className="max-w-[1400px] mx-auto">
       <div className="flex items-center justify-between mb-6">
         <h1 className="text-[24px] font-medium text-[#1a1a1a]">Sync Logs</h1>
         <div className="flex items-center gap-3">
-          <button className="flex items-center gap-2 border border-[#E5E5E5] bg-white px-3 py-2 text-[13px] rounded hover:bg-[#FAFAFA] transition-colors">
-            Clear Logs
-          </button>
           <RetryAllButton />
         </div>
       </div>
@@ -119,37 +173,10 @@ export default async function SyncPage() {
         </div>
       </div>
 
-      {/* Filters */}
-      <div className="bg-white rounded-lg border border-[#E5E5E5] p-4 mb-4">
-        <div className="flex flex-wrap items-center gap-4">
-          <div className="flex-1 min-w-[200px] relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-[#999]" />
-            <input
-              type="text"
-              placeholder="Search logs..."
-              className="w-full pl-10 pr-4 py-2 border border-[#E5E5E5] rounded text-[13px] focus:outline-none focus:border-[#1a1a1a]"
-            />
-          </div>
-          <select className="border border-[#E5E5E5] rounded px-3 py-2 text-[13px] bg-white">
-            <option>All Types</option>
-            <option>Orders</option>
-            <option>Products</option>
-            <option>Inventory</option>
-            <option>Webhooks</option>
-          </select>
-          <select className="border border-[#E5E5E5] rounded px-3 py-2 text-[13px] bg-white">
-            <option>All Status</option>
-            <option>Success</option>
-            <option>Pending</option>
-            <option>Error</option>
-          </select>
-          <select className="border border-[#E5E5E5] rounded px-3 py-2 text-[13px] bg-white">
-            <option>Last 24 hours</option>
-            <option>Last 7 days</option>
-            <option>Last 30 days</option>
-          </select>
-        </div>
-      </div>
+      {/* Interactive Filters */}
+      <Suspense fallback={null}>
+        <SyncFilters />
+      </Suspense>
 
       {/* Sync Events Table */}
       <div className="bg-white rounded-lg border border-[#E5E5E5] overflow-hidden">
@@ -167,14 +194,16 @@ export default async function SyncPage() {
             </tr>
           </thead>
           <tbody className="divide-y divide-[#E5E5E5]">
-            {events.length === 0 ? (
+            {paginatedEvents.length === 0 ? (
               <tr>
                 <td colSpan={8} className="px-4 py-8 text-center text-[13px] text-[#666]">
-                  No sync events yet. Events will appear here when webhooks are triggered.
+                  {searchQuery || typeFilter || statusFilter || daysFilter
+                    ? 'No sync events match your filters.'
+                    : 'No sync events yet. Events will appear here when webhooks are triggered.'}
                 </td>
               </tr>
             ) : (
-              events.map((event) => (
+              paginatedEvents.map((event) => (
                 <tr key={event.id} className={`hover:bg-[#FAFAFA] transition-colors ${event.status === 'failed' ? 'bg-[#FEF2F2]' : ''}`}>
                   <td className="px-4 py-3">
                     <span className={`text-[11px] px-2 py-0.5 rounded ${
@@ -224,15 +253,14 @@ export default async function SyncPage() {
         </table>
       </div>
 
-      {/* Pagination */}
-      <div className="flex items-center justify-between mt-4">
-        <p className="text-[12px] text-[#666]">Showing {events.length} events</p>
-        <div className="flex items-center gap-2">
-          <button className="px-3 py-1.5 text-[12px] border border-[#E5E5E5] rounded bg-white hover:bg-[#FAFAFA]">Previous</button>
-          <button className="px-3 py-1.5 text-[12px] border border-[#E5E5E5] rounded bg-[#1a1a1a] text-white">1</button>
-          <button className="px-3 py-1.5 text-[12px] border border-[#E5E5E5] rounded bg-white hover:bg-[#FAFAFA]">Next</button>
-        </div>
-      </div>
+      {/* Interactive Pagination */}
+      <Suspense fallback={null}>
+        <SyncPagination
+          currentPage={currentPage}
+          totalEvents={searchQuery ? totalEvents : stats.total}
+          pageSize={PAGE_SIZE}
+        />
+      </Suspense>
     </div>
   )
 }

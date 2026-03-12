@@ -29,10 +29,11 @@ export function AddToCartButton({ variantId, variants, className }: AddToCartBut
     <div className={className}>
       {variants && variants.length > 1 && (
         <div className="mb-6">
-          <label className="text-[11px] uppercase tracking-[0.1em] text-[#666] block mb-2">
+          <label htmlFor="variant-select" className="text-[11px] uppercase tracking-[0.1em] text-[#666] block mb-2">
             Select Option
           </label>
           <select 
+            id="variant-select"
             className="w-full border border-[#E5E5E5] px-4 py-3 text-[14px] bg-white appearance-none cursor-pointer"
             value={selectedVariant}
             onChange={(e) => setSelectedVariant(e.target.value)}

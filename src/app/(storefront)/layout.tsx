@@ -12,7 +12,7 @@ export default function StorefrontLayout({
     <CartProvider>
       <div className="min-h-screen bg-white text-[#1a1a1a]">
         {/* Header */}
-        <header className="sticky top-0 z-50 bg-white">
+        <header className="sticky top-0 z-50 bg-white" role="banner">
           <div className="max-w-[1400px] mx-auto px-6 py-5">
             <div className="flex items-start justify-between">
               {/* Logo & Nav */}
@@ -22,7 +22,7 @@ export default function StorefrontLayout({
                   <span className="text-[#D4A700]">Cards</span>
                   <span>Samples</span>
                 </Link>
-                <nav className={`${playfair.className} hidden md:flex flex-col text-[42px] leading-[1.15]`}>
+                <nav aria-label="Main navigation" className={`${playfair.className} hidden md:flex flex-col text-[42px] leading-[1.15]`}>
                   <Link href="/about" className="text-[#D4A700]">About</Link>
                   <Link href="/custom" className="text-[#D4A700]">Custom</Link>
                   <Link href="/" className="text-[#999]">Search...</Link>
@@ -45,10 +45,10 @@ export default function StorefrontLayout({
         </header>
 
       {/* Main Content */}
-      <main>{children}</main>
+      <main id="main-content">{children}</main>
 
       {/* Newsletter */}
-      <section className="bg-[#F5C518] py-12 px-6">
+      <section className="bg-[#F5C518] py-12 px-6" aria-label="Newsletter signup">
         <div className="max-w-[1400px] mx-auto flex flex-col md:flex-row items-start justify-between gap-10">
           <div className="max-w-[440px]">
             <p className="text-[22px] leading-[1.4] tracking-[-0.01em]">
@@ -60,11 +60,12 @@ export default function StorefrontLayout({
                 placeholder="Enter your email"
                 className="flex-1 px-3 py-2.5 bg-white text-[13px] border-0 outline-none placeholder:text-[#999]"
                 autoComplete="email"
+                aria-label="Email address for newsletter"
                 data-1p-ignore
                 data-lpignore="true"
                 suppressHydrationWarning
               />
-              <button className="px-5 py-2.5 bg-[#1a1a1a] text-white text-[11px] uppercase tracking-[0.06em]">
+              <button type="submit" className="px-5 py-2.5 bg-[#1a1a1a] text-white text-[11px] uppercase tracking-[0.06em]">
                 Subscribe
               </button>
             </form>
@@ -74,15 +75,15 @@ export default function StorefrontLayout({
       </section>
 
       {/* Footer */}
-      <footer className="bg-[#F5F5F3] py-14 px-6">
+      <footer className="bg-[#F5F5F3] py-14 px-6" role="contentinfo">
         <div className="max-w-[1400px] mx-auto">
           <div className="flex flex-wrap justify-between gap-12 mb-16">
-            <div className={`${playfair.className} flex flex-col gap-0.5`}>
+            <nav aria-label="Footer navigation" className={`${playfair.className} flex flex-col gap-0.5`}>
               <Link href="/about" className="text-[28px] md:text-[32px]">About</Link>
               <Link href="/contact" className="text-[28px] md:text-[32px]">Contact</Link>
               <Link href="/faq" className="text-[28px] md:text-[32px]">FAQ</Link>
               <Link href="/custom" className="text-[28px] md:text-[32px]">Custom Work</Link>
-            </div>
+            </nav>
             <div className={`${playfair.className}`}>
               <Link href="/privacy" className="text-[28px] md:text-[32px]">Privacy</Link>
             </div>

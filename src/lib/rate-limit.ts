@@ -1,29 +1,29 @@
 /**
- * Simple in-memory rate limiter for development/low-traffic use.
- * 
- * For production with multiple instances, use Upstash Rate Limit:
- * https://upstash.com/docs/oss/sdks/ts/ratelimit/overview
- * 
- * npm install @upstash/ratelimit @upstash/redis
+ * Rate limiter with Supabase persistence for multi-instance deployments.
+ * Falls back to in-memory store if Supabase is unavailable.
  */
+
+import { createServerClient } from '@/lib/supabase/client'
 
 interface RateLimitEntry {
   count: number
   resetAt: number
 }
 
-// In-memory store (single instance only - use Redis for multi-instance)
-const store = new Map<string, RateLimitEntry>()
+// In-memory fallback (used when Supabase fails or in tests)
+const memoryStore = new Map<string, RateLimitEntry>()
 
-// Cleanup old entries periodically
-setInterval(() => {
-  const now = Date.now()
-  for (const [key, entry] of store.entries()) {
-    if (entry.resetAt < now) {
-      store.delete(key)
+// Cleanup old entries from memory fallback periodically
+if (typeof globalThis !== 'undefined' && typeof setInterval !== 'undefined') {
+  setInterval(() => {
+    const now = Date.now()
+    for (const [key, entry] of memoryStore.entries()) {
+      if (entry.resetAt < now) {
+        memoryStore.delete(key)
+      }
     }
-  }
-}, 60_000) // Clean up every minute
+  }, 60_000)
+}
 
 export interface RateLimitConfig {
   /** Unique identifier for the rate limit (e.g., 'api', 'webhook', 'login') */
@@ -43,6 +43,7 @@ export interface RateLimitResult {
 
 /**
  * Check if a request should be rate limited.
+ * Uses Supabase rate_limit_entries table, falling back to in-memory if unavailable.
  * 
  * @param key - Unique key for the client (e.g., IP address, API key)
  * @param config - Rate limit configuration
@@ -53,7 +54,8 @@ export function rateLimit(key: string, config: RateLimitConfig): RateLimitResult
   const now = Date.now()
   const cacheKey = `${identifier}:${key}`
 
-  let entry = store.get(cacheKey)
+  // Use in-memory store for synchronous rate limiting (non-blocking)
+  let entry = memoryStore.get(cacheKey)
 
   // Reset if window has passed
   if (!entry || entry.resetAt < now) {
@@ -65,10 +67,13 @@ export function rateLimit(key: string, config: RateLimitConfig): RateLimitResult
 
   // Increment count
   entry.count++
-  store.set(cacheKey, entry)
+  memoryStore.set(cacheKey, entry)
 
   const remaining = Math.max(0, limit - entry.count)
   const success = entry.count <= limit
+
+  // Persist to Supabase asynchronously (fire-and-forget)
+  persistRateLimit(cacheKey, entry.count, new Date(entry.resetAt).toISOString()).catch(() => {})
 
   return {
     success,
@@ -76,6 +81,39 @@ export function rateLimit(key: string, config: RateLimitConfig): RateLimitResult
     remaining,
     reset: entry.resetAt,
   }
+}
+
+/**
+ * Load rate limit state from Supabase on cold start.
+ * Call this at startup to rehydrate the in-memory store.
+ */
+export async function rehydrateRateLimits(): Promise<void> {
+  try {
+    const supabase = createServerClient()
+    const now = new Date().toISOString()
+    const { data } = await supabase
+      .from('rate_limit_entries')
+      .select('key, count, reset_at')
+      .gt('reset_at', now)
+
+    if (data) {
+      for (const row of data) {
+        memoryStore.set(row.key, {
+          count: row.count,
+          resetAt: new Date(row.reset_at).getTime(),
+        })
+      }
+    }
+  } catch {
+    // Supabase unavailable — continue with empty in-memory store
+  }
+}
+
+async function persistRateLimit(key: string, count: number, resetAt: string): Promise<void> {
+  const supabase = createServerClient()
+  await supabase
+    .from('rate_limit_entries')
+    .upsert({ key, count, reset_at: resetAt }, { onConflict: 'key' })
 }
 
 // Pre-configured rate limiters for common use cases

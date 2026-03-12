@@ -4,6 +4,7 @@ import { createSyncEvent } from '@/lib/supabase/sync-events'
 import { inngest } from '@/lib/inngest/client'
 import { rateLimiters, getClientIp } from '@/lib/rate-limit'
 import type { SyncEvent } from '@/types/sync'
+import type { ZodSchema } from 'zod'
 
 interface WebhookConfig {
   /** Sync event type: 'order' | 'inventory' */
@@ -16,6 +17,8 @@ interface WebhookConfig {
   buildEventData: (payload: Record<string, unknown>, syncEventId: string, webhookId: string) => Record<string, unknown>
   /** Label for log messages, e.g. "Order created" */
   logLabel: string
+  /** Optional Zod schema to validate the parsed payload */
+  schema?: ZodSchema
 }
 
 /**
@@ -41,6 +44,15 @@ export async function handleShopifyWebhook(request: NextRequest, config: Webhook
 
     const payload: Record<string, unknown> = JSON.parse(rawBody)
 
+    // Validate payload structure if schema provided
+    if (config.schema) {
+      const result = config.schema.safeParse(payload)
+      if (!result.success) {
+        console.error(`[Webhook] Invalid ${config.logLabel} payload:`, result.error.issues)
+        return NextResponse.json({ error: 'Invalid webhook payload' }, { status: 400 })
+      }
+    }
+
     console.log(`[Webhook] ${config.logLabel}`)
 
     const syncEvent = await createSyncEvent({
@@ -57,10 +69,20 @@ export async function handleShopifyWebhook(request: NextRequest, config: Webhook
       return NextResponse.json({ error: 'Failed to log event' }, { status: 500 })
     }
 
-    await inngest.send({
-      name: config.inngestEvent,
-      data: config.buildEventData(payload, syncEvent.id!, metadata.webhookId || ''),
-    })
+    try {
+      await inngest.send({
+        name: config.inngestEvent,
+        data: config.buildEventData(payload, syncEvent.id!, metadata.webhookId || ''),
+      })
+    } catch (inngestError) {
+      console.error('[Webhook] Failed to dispatch Inngest event:', inngestError)
+      await createSyncEvent({
+        ...syncEvent,
+        status: 'failed',
+        error_message: `Inngest dispatch failed: ${inngestError instanceof Error ? inngestError.message : 'Unknown error'}`,
+      }).catch(() => {}) // best-effort update
+      return NextResponse.json({ error: 'Failed to dispatch sync job' }, { status: 500 })
+    }
 
     return NextResponse.json({ success: true, syncEventId: syncEvent.id })
   } catch (error) {

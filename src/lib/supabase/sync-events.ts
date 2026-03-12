@@ -211,3 +211,47 @@ export async function getFailedSyncEvents(): Promise<SyncEvent[]> {
 
   return data || []
 }
+
+/**
+ * Delete sync events older than the specified number of days.
+ * Only deletes completed (success) events by default to keep failures for debugging.
+ * Returns the count of deleted rows.
+ */
+export async function deleteOldSyncEvents(
+  olderThanDays: number,
+  { includeFailures = false }: { includeFailures?: boolean } = {}
+): Promise<number> {
+  const supabase = createServerClient()
+  const cutoff = new Date(Date.now() - olderThanDays * 24 * 60 * 60 * 1000).toISOString()
+
+  // Count matching rows first
+  let countQuery = supabase
+    .from(TABLE_NAME)
+    .select('id', { count: 'exact', head: true })
+    .lt('created_at', cutoff)
+
+  if (!includeFailures) {
+    countQuery = countQuery.in('status', ['success', 'pending'])
+  }
+
+  const { count } = await countQuery
+
+  // Perform the delete
+  let deleteQuery = supabase
+    .from(TABLE_NAME)
+    .delete()
+    .lt('created_at', cutoff)
+
+  if (!includeFailures) {
+    deleteQuery = deleteQuery.in('status', ['success', 'pending'])
+  }
+
+  const { error } = await deleteQuery
+
+  if (error) {
+    console.error('Failed to delete old sync events:', error)
+    return 0
+  }
+
+  return count ?? 0
+}

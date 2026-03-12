@@ -70,9 +70,32 @@ export async function updatePartner(partnerId: number, data: Partial<OdooPartner
 
 /**
  * Get or create partner by email
- * Returns existing partner if found, creates new one otherwise
+ * Returns existing partner if found, creates new one otherwise.
+ * Uses a per-email lock to prevent duplicate creation from concurrent requests.
  */
+
+const partnerLocks = new Map<string, Promise<OdooPartner>>()
+
 export async function getOrCreatePartner(
+  email: string,
+  name: string,
+  shopifyCustomerId?: string,
+  address?: Partial<OdooPartner>
+): Promise<OdooPartner> {
+  const lockKey = email.toLowerCase()
+  const existing = partnerLocks.get(lockKey)
+  if (existing) {
+    return existing
+  }
+
+  const promise = _getOrCreatePartner(email, name, shopifyCustomerId, address)
+    .finally(() => partnerLocks.delete(lockKey))
+
+  partnerLocks.set(lockKey, promise)
+  return promise
+}
+
+async function _getOrCreatePartner(
   email: string,
   name: string,
   shopifyCustomerId?: string,

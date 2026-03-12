@@ -165,8 +165,9 @@ export async function getProductsByType(productType: string, first: number = 50)
     }
   `
 
+  const sanitizedType = productType.replace(/"/g, '\\"')
   const data = await shopifyStorefrontFetch<ProductsResponse>(query, {
-    query: `product_type:"${productType}"`,
+    query: `product_type:"${sanitizedType}"`,
     first,
   })
 
