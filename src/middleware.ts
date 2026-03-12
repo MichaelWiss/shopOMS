@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { validateSession, compareSecrets } from '@/lib/session'
+import { adminEnv } from '@/lib/env'
 
 /**
  * Middleware to protect admin routes and sensitive API endpoints.
@@ -15,20 +16,11 @@ export async function middleware(request: NextRequest) {
   if (pathname.startsWith('/api/sync') || pathname === '/api/health') {
     const authHeader = request.headers.get('authorization')
     const apiKeyHeader = request.headers.get('x-api-key')
-    const apiKey = process.env.ADMIN_API_KEY
-
-    if (!apiKey) {
-      console.error('ADMIN_API_KEY is not set')
-      return NextResponse.json(
-        { error: 'Internal server error' },
-        { status: 500 }
-      )
-    }
 
     const token = authHeader?.startsWith('Bearer ') ? authHeader.slice(7) : null
     const providedKey = token || apiKeyHeader
 
-    if (!providedKey || !compareSecrets(providedKey, apiKey)) {
+    if (!providedKey || !compareSecrets(providedKey, adminEnv.ADMIN_API_KEY)) {
       return NextResponse.json(
         { error: 'Unauthorized' },
         { status: 401 }

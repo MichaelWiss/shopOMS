@@ -114,26 +114,4 @@ describe('Environment Validation', () => {
     })
   })
 
-  describe('Redis schema validation', () => {
-    const redisSchema = z.object({
-      REDIS_URL: z.string().min(1),
-    })
-
-    it('should accept local Redis URL', () => {
-      const result = redisSchema.safeParse({ REDIS_URL: 'redis://localhost:6379' })
-      expect(result.success).toBe(true)
-    })
-
-    it('should accept Upstash Redis URL', () => {
-      const result = redisSchema.safeParse({
-        REDIS_URL: 'rediss://default:password@us1-xyz.upstash.io:6379',
-      })
-      expect(result.success).toBe(true)
-    })
-
-    it('should reject empty URL', () => {
-      const result = redisSchema.safeParse({ REDIS_URL: '' })
-      expect(result.success).toBe(false)
-    })
-  })
 })

@@ -2,20 +2,27 @@ import { NextRequest, NextResponse } from 'next/server'
 import { revokeSession } from '@/lib/session'
 
 export async function POST(request: NextRequest) {
-  const sessionToken = request.cookies.get('admin_session')?.value
+  try {
+    const sessionToken = request.cookies.get('admin_session')?.value
 
-  if (sessionToken) {
-    await revokeSession(sessionToken)
+    if (sessionToken) {
+      await revokeSession(sessionToken)
+    }
+
+    const response = NextResponse.json({ success: true })
+    response.cookies.set('admin_session', '', {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
+      maxAge: 0,
+      path: '/admin',
+    })
+
+    return response
+  } catch {
+    return NextResponse.json(
+      { error: 'Internal server error' },
+      { status: 500 }
+    )
   }
-
-  const response = NextResponse.json({ success: true })
-  response.cookies.set('admin_session', '', {
-    httpOnly: true,
-    secure: process.env.NODE_ENV === 'production',
-    sameSite: 'lax',
-    maxAge: 0,
-    path: '/admin',
-  })
-
-  return response
 }

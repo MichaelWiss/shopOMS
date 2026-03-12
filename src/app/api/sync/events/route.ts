@@ -37,14 +37,21 @@ export async function GET(request: NextRequest) {
   }
 
   // Fetch data
-  const [events, stats] = await Promise.all([
-    getSyncEvents(filter),
-    getSyncStats(),
-  ])
+  try {
+    const [events, stats] = await Promise.all([
+      getSyncEvents(filter),
+      getSyncStats(),
+    ])
 
-  return NextResponse.json({
-    events,
-    stats,
-    filter,
-  })
+    return NextResponse.json({
+      events,
+      stats,
+      filter,
+    })
+  } catch {
+    return NextResponse.json(
+      { error: 'Failed to fetch sync events' },
+      { status: 500 }
+    )
+  }
 }

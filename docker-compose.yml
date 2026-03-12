@@ -1,3 +1,0 @@
-# Docker Compose is no longer needed for the queue system.
-# Inngest runs as a cloud service — no Redis or worker containers required.
-# To run the Inngest dev server locally: npx inngest-cli@latest dev
