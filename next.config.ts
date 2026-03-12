@@ -39,11 +39,16 @@ const securityHeaders = [
       "font-src 'self'",
       "connect-src 'self' https://*.supabase.co https://*.myshopify.com",
       "frame-ancestors 'none'",
+      "base-uri 'self'",
+      "form-action 'self'",
+      "object-src 'none'",
+      "upgrade-insecure-requests",
     ].join('; '),
   },
 ]
 
 const nextConfig: NextConfig = {
+  output: 'standalone',
   images: {
     remotePatterns: [
       {

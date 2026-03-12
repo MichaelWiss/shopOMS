@@ -13,28 +13,68 @@ const LEVEL_EMOJI: Record<AlertLevel, string> = {
   critical: '🚨',
 }
 
+async function sendSlack(alert: Alert, slackUrl: string): Promise<void> {
+  const text = `${LEVEL_EMOJI[alert.level]} *${alert.title}*\n${alert.message}${
+    alert.metadata ? `\n\`\`\`${JSON.stringify(alert.metadata, null, 2)}\`\`\`` : ''
+  }`
+  await fetch(slackUrl, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ text }),
+  })
+}
+
+async function sendEmail(alert: Alert): Promise<void> {
+  const apiKey = process.env.SENDGRID_API_KEY
+  const to = process.env.ALERT_EMAIL_TO
+  const from = process.env.ALERT_EMAIL_FROM
+  if (!apiKey || !to || !from) return
+
+  const subject = `[${alert.level.toUpperCase()}] ${alert.title}`
+  const body = `${alert.message}${
+    alert.metadata ? `\n\n--- Metadata ---\n${JSON.stringify(alert.metadata, null, 2)}` : ''
+  }`
+
+  await fetch('https://api.sendgrid.com/v3/mail/send', {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${apiKey}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      personalizations: [{ to: [{ email: to }] }],
+      from: { email: from },
+      subject,
+      content: [{ type: 'text/plain', value: body }],
+    }),
+  })
+}
+
 /**
  * Send an alert. Always logs to console (captured by Vercel).
- * If SLACK_WEBHOOK_URL is set, also posts to Slack.
+ * Optionally posts to Slack (SLACK_WEBHOOK_URL) and/or
+ * sends email via SendGrid (SENDGRID_API_KEY, ALERT_EMAIL_TO, ALERT_EMAIL_FROM).
  */
 export async function sendAlert(alert: Alert): Promise<void> {
   const prefix = `[ALERT:${alert.level.toUpperCase()}]`
   const logFn = alert.level === 'critical' ? console.error : alert.level === 'warning' ? console.warn : console.info
   logFn(`${prefix} ${alert.title}: ${alert.message}`, alert.metadata ?? '')
 
+  const deliveries: Promise<void>[] = []
+
   const slackUrl = process.env.SLACK_WEBHOOK_URL
   if (slackUrl) {
-    try {
-      const text = `${LEVEL_EMOJI[alert.level]} *${alert.title}*\n${alert.message}${
-        alert.metadata ? `\n\`\`\`${JSON.stringify(alert.metadata, null, 2)}\`\`\`` : ''
-      }`
-      await fetch(slackUrl, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ text }),
-      })
-    } catch (err) {
-      console.error('[ALERT] Failed to send Slack notification:', err)
+    deliveries.push(sendSlack(alert, slackUrl))
+  }
+
+  if (process.env.SENDGRID_API_KEY) {
+    deliveries.push(sendEmail(alert))
+  }
+
+  const results = await Promise.allSettled(deliveries)
+  for (const result of results) {
+    if (result.status === 'rejected') {
+      console.error('[ALERT] Delivery channel failed:', result.reason)
     }
   }
 }
