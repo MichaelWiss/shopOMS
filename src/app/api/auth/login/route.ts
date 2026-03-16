@@ -34,7 +34,7 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    const sessionToken = await createSession()
+    const sessionToken: string = await createSession()
 
     const response = NextResponse.json({ success: true })
     response.cookies.set('admin_session', sessionToken, {
