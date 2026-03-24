@@ -14,7 +14,13 @@ export async function generateStaticParams() {
 
 export default async function ProductPage({ params }: { params: Promise<{ handle: string }> }) {
   const { handle } = await params
-  const product = await getProductByHandle(handle)
+
+  let product
+  try {
+    product = await getProductByHandle(handle)
+  } catch {
+    notFound()
+  }
 
   if (!product) {
     notFound()
@@ -25,11 +31,16 @@ export default async function ProductPage({ params }: { params: Promise<{ handle
   const imageUrl = product.featuredImage?.url
   const allImages = product.images.edges.map(e => e.node)
 
-  // Get related products (same productType, excluding current)
-  const { products: allProducts } = await getProducts(20)
-  const related = allProducts
-    .filter(p => p.id !== product.id && p.productType === product.productType)
-    .slice(0, 4)
+  // Get related products (non-critical — failure should not block the page)
+  let related: typeof product[] = []
+  try {
+    const { products: allProducts } = await getProducts(20)
+    related = allProducts
+      .filter(p => p.id !== product!.id && p.productType === product!.productType)
+      .slice(0, 4)
+  } catch {
+    // silently skip related products if Shopify is unavailable
+  }
 
   return (
     <div className="max-w-[1200px] mx-auto px-6 py-10">

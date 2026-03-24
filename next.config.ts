@@ -48,7 +48,6 @@ const securityHeaders = [
 ]
 
 const nextConfig: NextConfig = {
-  output: 'standalone',
   images: {
     remotePatterns: [
       {
@@ -56,11 +55,6 @@ const nextConfig: NextConfig = {
         hostname: 'cdn.shopify.com',
       },
     ],
-  },
-  experimental: {
-    serverActions: {
-      bodySizeLimit: '2mb',
-    },
   },
   async headers() {
     return [
