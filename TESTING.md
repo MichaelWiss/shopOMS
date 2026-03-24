@@ -13,6 +13,7 @@
 - Utility functions
 - Data transformations
 - Validation logic
+- Pure live-stream helpers such as merge/cap behavior (`useSyncEventsLive.test.ts`)
 
 **Example:**
 ```typescript
@@ -25,15 +26,19 @@ describe('calculateDiscount', () => {
 ```
 
 ### Integration Tests (20%)
-**Tools**: Vitest + HTTP route tests (planned) + React Testing Library (UI integration)  
-**Location**: `tests/integration/` (planned; not present yet)  
-**Run**: `npm run test:integration` (planned; script not present yet)
+**Tools**: Vitest + HTTP route tests + React Testing Library (UI integration)  
+**Location**: Currently colocated next to source files; dedicated `tests/integration/` directory is still planned  
+**Run**: `npm run test:run` (current), `npm run test:integration` (planned; script not present yet)
 
 **What to test:**
 - API endpoints
 - Database interactions
 - Component integration
 - External service mocks
+
+**Current examples:**
+- `src/app/api/sync/stream/route.test.ts` validates SSE headers plus initial snapshot/retry framing
+- `src/components/SyncEventsLive/SyncEventsLive.test.tsx` validates degraded polling UI and reconnect action wiring
 
 ### E2E Tests (10%)
 **Tools**: Playwright (planned)  
@@ -80,6 +85,7 @@ Current status: no repository CI workflow file is present yet, so test automatio
 - **External APIs**: Mock Shopify, Odoo, Supabase boundaries in test setup (current pattern in `vitest.setup.ts`)
 - **Database**: Prefer mocked Supabase client for unit tests; use isolated integration database for future integration suite
 - **Time**: Use Vitest fake timers (`vi.useFakeTimers()`) where time-dependent behavior is tested
+- **Next.js client routing**: Mock App Router-dependent UI boundaries (or isolate them behind mocked child components) when component tests do not need to exercise router behavior directly
 - **File system**: Use in-memory fs mocks (for example, `memfs`) when file operations are introduced
 
 ## Coverage Requirements

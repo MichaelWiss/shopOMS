@@ -24,8 +24,11 @@ const VALID_STATUSES: readonly SyncStatus[] = [
 export const SYNC_STREAM_CONFIG = {
   defaultLimit: 50,
   maxLimit: 200,
+  maxRetainedRows: 200,
   pollIntervalMs: 2000,
   heartbeatMs: 15000,
+  sseRetryMs: 3000,
+  degradedPollMs: 10_000,
 } as const
 
 // Phase 1 lock-in: define intentional scope boundaries before implementation.

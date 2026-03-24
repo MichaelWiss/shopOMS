@@ -107,8 +107,17 @@ This is a serverless event-driven architecture where Next.js acts as the applica
 **Interfaces**:
 - GET /api/health
 - GET /api/sync/events
+- GET /api/sync/stream
 - sendAlert(...)
 - rateLimiters.{webhook,login,api,storefront}
+
+### Admin Live Stream Service
+**Responsibility**: Deliver low-latency sync event updates to the admin dashboard without requiring a separate Supabase browser auth model.
+**Technology**: Next.js Route Handler SSE endpoint, browser-native EventSource reconnect, client-side animation-frame batching, degraded polling fallback.
+**Interfaces**:
+- GET /api/sync/stream
+- useSyncEventsLive(...)
+- SyncEventsLive
 
 ## Data Model
 High-level entity relationships:
@@ -123,6 +132,7 @@ Shopify webhook --> sync_events --(successful order sync)--> order_mappings
 Admin login -----> admin_sessions
 Incoming request -> rate_limit_entries
 Admin dashboard -> reads sync_events + order_mappings + sync_stats
+Admin dashboard -> subscribes to /api/sync/stream (SSE) -> falls back to /api/sync/events polling on disconnect
 ```
 
 ## Security Architecture
@@ -142,6 +152,8 @@ Admin dashboard -> reads sync_events + order_mappings + sync_stats
 - Retry resilience through Inngest retry policies and explicit event status transitions.
 - Database indexing for common event status and temporal query patterns.
 - Distributed rate-limit durability via Supabase-backed rate_limit_entries with in-memory fast path.
+- Admin live streaming uses browser-native SSE reconnect with a 3-second retry hint, animation-frame batched client merges, and a bounded 200-row retained window to prevent UI thrash and memory growth.
+- Degraded-mode polling via `/api/sync/events` preserves admin visibility when SSE cannot remain connected.
 - Multi-stage Docker builds to minimize production image size and startup overhead.
 - Periodic retention cleanup to control event-table growth.
 
@@ -192,12 +204,13 @@ Deployment model notes:
   - Optional Slack webhook notifications.
   - Optional SendGrid email notifications.
   - Admin dashboard visibility for sync status, backlog, and retry actions.
+  - Admin sync screen exposes stream state to operators: live, connecting, or degraded polling mode.
   - Protected health endpoint for service connectivity checks.
 
 ## Future Considerations
 - Complete inventory sync with robust SKU/product mapping strategy.
 - Expand fulfillment sync from logging to full Odoo delivery-order integration.
-- Add live event streaming in admin UI with Supabase Realtime.
+- Evaluate Supabase Realtime only if the admin auth model is redesigned to support secure browser subscriptions; current production path is SSE-first.
 - Introduce explicit repository CI workflows for test/build checks on PRs.
 - Add formal security headers baseline and hardening checklist for production.
 - Add architecture decision records (ADR) for major integration and scaling choices.
