@@ -122,7 +122,7 @@ export async function getCurrentCart(): Promise<ShopifyCart | null> {
     const cartId = await getCartId()
     if (!cartId) return null
     
-    return getCart(cartId)
+    return await getCart(cartId)
   } catch (error) {
     console.error('[Cart] Failed to get cart:', error)
     return null

@@ -8,7 +8,8 @@ interface CartContextValue {
   cart: ShopifyCart | null
   isLoading: boolean
   isPending: boolean
-  addItem: (variantId: string, quantity?: number) => Promise<void>
+  cartError: string | null
+  addItem: (variantId: string, quantity?: number) => Promise<ShopifyCart | null>
   updateQuantity: (lineId: string, quantity: number) => Promise<void>
   removeFromCart: (lineId: string) => Promise<void>
   refreshCart: () => Promise<void>
@@ -19,24 +20,33 @@ const CartContext = createContext<CartContextValue | undefined>(undefined)
 export function CartProvider({ children, initialCart }: { children: ReactNode; initialCart?: ShopifyCart | null }) {
   const [cart, setCart] = useState<ShopifyCart | null>(initialCart ?? null)
   const [isLoading, setIsLoading] = useState(!initialCart)
+  const [cartError, setCartError] = useState<string | null>(null)
   const [isPending, startTransition] = useTransition()
 
   // Load cart on mount if not provided
   useEffect(() => {
     if (!initialCart) {
-      getCurrentCart().then(c => {
-        setCart(c)
-        setIsLoading(false)
-      })
+      getCurrentCart()
+        .then(c => {
+          setCart(c)
+          setIsLoading(false)
+        })
+        .catch(() => setIsLoading(false))
     }
   }, [initialCart])
 
-  const addItem = useCallback(async (variantId: string, quantity: number = 1) => {
-    startTransition(async () => {
-      const updatedCart = await addItemToCart(variantId, quantity)
-      if (updatedCart) {
-        setCart(updatedCart)
-      }
+  const addItem = useCallback(async (variantId: string, quantity: number = 1): Promise<ShopifyCart | null> => {
+    setCartError(null)
+    return new Promise((resolve) => {
+      startTransition(async () => {
+        const updatedCart = await addItemToCart(variantId, quantity)
+        if (updatedCart) {
+          setCart(updatedCart)
+        } else {
+          setCartError('Failed to add item to cart. Please try again.')
+        }
+        resolve(updatedCart ?? null)
+      })
     })
   }, [])
 
@@ -69,7 +79,8 @@ export function CartProvider({ children, initialCart }: { children: ReactNode; i
     <CartContext.Provider value={{ 
       cart, 
       isLoading, 
-      isPending, 
+      isPending,
+      cartError,
       addItem, 
       updateQuantity, 
       removeFromCart, 

@@ -18,11 +18,17 @@ export function AddToCartButton({ variantId, variants, className }: AddToCartBut
   const { addItem, isPending } = useCart()
   const [selectedVariant, setSelectedVariant] = useState(variantId)
   const [justAdded, setJustAdded] = useState(false)
+  const [error, setError] = useState<string | null>(null)
 
   const handleAddToCart = async () => {
-    await addItem(selectedVariant, 1)
-    setJustAdded(true)
-    setTimeout(() => setJustAdded(false), 2000)
+    setError(null)
+    const result = await addItem(selectedVariant, 1)
+    if (result) {
+      setJustAdded(true)
+      setTimeout(() => setJustAdded(false), 2000)
+    } else {
+      setError('Could not add to cart. Please try again.')
+    }
   }
 
   return (
@@ -66,6 +72,9 @@ export function AddToCartButton({ variantId, variants, className }: AddToCartBut
           'Add to Cart'
         )}
       </button>
+      {error && (
+        <p className="text-[12px] text-red-600 mt-2 text-center">{error}</p>
+      )}
     </div>
   )
 }
