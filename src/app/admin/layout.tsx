@@ -19,11 +19,11 @@ export default function AdminLayout({
   const navItems = [
     { href: '/admin', label: 'Dashboard', icon: LayoutDashboard },
     { href: '/admin/orders', label: 'Orders', icon: ShoppingCart },
-    ...(siteConfig.flags.adminStubsEnabled
-      ? [
-          { href: '/admin/products', label: 'Products', icon: Package },
-          { href: '/admin/inventory', label: 'Inventory', icon: Warehouse },
-        ]
+    ...(siteConfig.flags.adminInventoryDashboard
+      ? [{ href: '/admin/inventory', label: 'Inventory', icon: Warehouse }]
+      : []),
+    ...(siteConfig.flags.adminProductDashboard
+      ? [{ href: '/admin/products', label: 'Products', icon: Package }]
       : []),
     { href: '/admin/sync', label: 'Sync Logs', icon: RefreshCw },
     { href: '/admin/settings', label: 'Settings', icon: Settings },

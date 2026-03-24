@@ -1,3 +1,5 @@
 export { getSupabaseClient, createServerClient } from './client'
 export * from './sync-events'
 export * from './order-mappings'
+export * from './inventory-snapshots'
+export * from './product-mappings'

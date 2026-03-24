@@ -37,14 +37,14 @@ CREATE TABLE IF NOT EXISTS sync_events (
 );
 
 -- Indexes for common queries
-CREATE INDEX idx_sync_events_status ON sync_events(status);
-CREATE INDEX idx_sync_events_type ON sync_events(type);
-CREATE INDEX idx_sync_events_created_at ON sync_events(created_at DESC);
-CREATE INDEX idx_sync_events_shopify_id ON sync_events(shopify_id);
-CREATE INDEX idx_sync_events_retry ON sync_events(status, next_retry_at) WHERE status = 'retry';
+CREATE INDEX IF NOT EXISTS idx_sync_events_status ON sync_events(status);
+CREATE INDEX IF NOT EXISTS idx_sync_events_type ON sync_events(type);
+CREATE INDEX IF NOT EXISTS idx_sync_events_created_at ON sync_events(created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_sync_events_shopify_id ON sync_events(shopify_id);
+CREATE INDEX IF NOT EXISTS idx_sync_events_retry ON sync_events(status, next_retry_at) WHERE status = 'retry';
 
 -- Composite index for filtering
-CREATE INDEX idx_sync_events_type_status_date ON sync_events(type, status, created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_sync_events_type_status_date ON sync_events(type, status, created_at DESC);
 
 -- Function to auto-update updated_at
 CREATE OR REPLACE FUNCTION update_updated_at_column()
@@ -88,9 +88,9 @@ CREATE TABLE IF NOT EXISTS order_mappings (
   synced_at TIMESTAMPTZ
 );
 
-CREATE INDEX idx_order_mappings_shopify_id ON order_mappings(shopify_order_id);
-CREATE INDEX idx_order_mappings_odoo_id ON order_mappings(odoo_order_id);
-CREATE INDEX idx_order_mappings_status ON order_mappings(status);
+CREATE INDEX IF NOT EXISTS idx_order_mappings_shopify_id ON order_mappings(shopify_order_id);
+CREATE INDEX IF NOT EXISTS idx_order_mappings_odoo_id ON order_mappings(odoo_order_id);
+CREATE INDEX IF NOT EXISTS idx_order_mappings_status ON order_mappings(status);
 
 -- RLS for order_mappings
 ALTER TABLE order_mappings ENABLE ROW LEVEL SECURITY;
@@ -113,7 +113,7 @@ CREATE TABLE IF NOT EXISTS admin_sessions (
 );
 
 -- Auto-expire old sessions (cleanup via index for efficient deletion)
-CREATE INDEX idx_admin_sessions_created_at ON admin_sessions(created_at);
+CREATE INDEX IF NOT EXISTS idx_admin_sessions_created_at ON admin_sessions(created_at);
 
 -- RLS for admin_sessions
 ALTER TABLE admin_sessions ENABLE ROW LEVEL SECURITY;
@@ -144,9 +144,80 @@ CREATE TABLE IF NOT EXISTS rate_limit_entries (
   reset_at TIMESTAMPTZ NOT NULL
 );
 
-CREATE INDEX idx_rate_limit_entries_reset_at ON rate_limit_entries(reset_at);
+CREATE INDEX IF NOT EXISTS idx_rate_limit_entries_reset_at ON rate_limit_entries(reset_at);
 
 ALTER TABLE rate_limit_entries ENABLE ROW LEVEL SECURITY;
+
+-- Inventory Snapshots: per-SKU + location read model, updated by inventorySync
+CREATE TABLE IF NOT EXISTS inventory_snapshots (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  sku TEXT NOT NULL,
+  location_id TEXT NOT NULL,
+  shopify_qty INTEGER,
+  odoo_qty INTEGER,
+  drift INTEGER GENERATED ALWAYS AS (COALESCE(shopify_qty, 0) - COALESCE(odoo_qty, 0)) STORED,
+  status TEXT NOT NULL DEFAULT 'pending' CHECK (status IN ('synced', 'failed', 'pending', 'drift')),
+  last_synced_at TIMESTAMPTZ,
+  last_error TEXT,
+  sync_event_id UUID REFERENCES sync_events(id) ON DELETE SET NULL,
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW(),
+  UNIQUE (sku, location_id)
+);
+
+CREATE INDEX IF NOT EXISTS idx_inventory_snapshots_sku ON inventory_snapshots(sku);
+CREATE INDEX IF NOT EXISTS idx_inventory_snapshots_status ON inventory_snapshots(status);
+CREATE INDEX IF NOT EXISTS idx_inventory_snapshots_location ON inventory_snapshots(location_id);
+
+CREATE TRIGGER update_inventory_snapshots_updated_at
+  BEFORE UPDATE ON inventory_snapshots
+  FOR EACH ROW
+  EXECUTE FUNCTION update_updated_at_column();
+
+ALTER TABLE inventory_snapshots ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "Service role full access" ON inventory_snapshots
+  FOR ALL
+  USING (auth.role() = 'service_role')
+  WITH CHECK (auth.role() = 'service_role');
+
+CREATE POLICY "Authenticated users can read" ON inventory_snapshots
+  FOR SELECT
+  USING (auth.role() = 'authenticated');
+
+-- Product Mappings: SKU <-> Shopify inventory_item_id <-> Odoo product_id
+CREATE TABLE IF NOT EXISTS product_mappings (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  sku TEXT NOT NULL UNIQUE,
+  shopify_inventory_item_id TEXT,
+  odoo_product_id INTEGER,
+  odoo_product_name TEXT,
+  mapping_status TEXT NOT NULL DEFAULT 'pending' CHECK (mapping_status IN ('mapped', 'missing_odoo', 'missing_sku', 'error', 'pending')),
+  last_checked_at TIMESTAMPTZ,
+  last_error TEXT,
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_product_mappings_sku ON product_mappings(sku);
+CREATE INDEX IF NOT EXISTS idx_product_mappings_status ON product_mappings(mapping_status);
+CREATE INDEX IF NOT EXISTS idx_product_mappings_odoo_id ON product_mappings(odoo_product_id);
+
+CREATE TRIGGER update_product_mappings_updated_at
+  BEFORE UPDATE ON product_mappings
+  FOR EACH ROW
+  EXECUTE FUNCTION update_updated_at_column();
+
+ALTER TABLE product_mappings ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "Service role full access" ON product_mappings
+  FOR ALL
+  USING (auth.role() = 'service_role')
+  WITH CHECK (auth.role() = 'service_role');
+
+CREATE POLICY "Authenticated users can read" ON product_mappings
+  FOR SELECT
+  USING (auth.role() = 'authenticated');
 
 CREATE POLICY "Service role full access" ON rate_limit_entries
   FOR ALL

@@ -34,6 +34,14 @@ export const siteConfig = {
     adminStubsEnabled:
       process.env.NODE_ENV !== 'production' ||
       process.env.NEXT_PUBLIC_ENABLE_ADMIN_STUBS === 'true',
+    /** Show the real inventory dashboard (inventory_snapshots read model). */
+    adminInventoryDashboard:
+      process.env.NODE_ENV !== 'production' ||
+      process.env.NEXT_PUBLIC_ENABLE_ADMIN_INVENTORY_DASHBOARD === 'true',
+    /** Show the real product mappings dashboard (product_mappings read model). */
+    adminProductDashboard:
+      process.env.NODE_ENV !== 'production' ||
+      process.env.NEXT_PUBLIC_ENABLE_ADMIN_PRODUCT_DASHBOARD === 'true',
   },
 } as const
 

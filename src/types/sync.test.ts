@@ -1,5 +1,8 @@
 import { describe, it, expect } from 'vitest'
-import type { SyncEvent, SyncStats, SyncStatus, SyncType, SyncDirection } from '@/types/sync'
+import type {
+  SyncEvent, SyncStats, SyncStatus, SyncType, SyncDirection,
+  InventorySnapshot, ProductMapping, InventorySnapshotStatus, MappingStatus,
+} from '@/types/sync'
 
 describe('Sync Types', () => {
   describe('SyncEvent structure', () => {
@@ -134,5 +137,78 @@ describe('Processing Time Calculations', () => {
     expect(formatDuration(1000)).toBe('1.0s')
     expect(formatDuration(1500)).toBe('1.5s')
     expect(formatDuration(12500)).toBe('12.5s')
+  })
+})
+
+describe('InventorySnapshot types', () => {
+  it('should accept all valid statuses', () => {
+    const statuses: InventorySnapshotStatus[] = ['synced', 'failed', 'pending', 'drift']
+    statuses.forEach(status => {
+      const snap: InventorySnapshot = { sku: 'SKU-1', location_id: '42', status }
+      expect(snap.status).toBe(status)
+    })
+  })
+
+  it('should accept optional qty and drift fields', () => {
+    const snap: InventorySnapshot = {
+      sku: 'SKU-1',
+      location_id: '42',
+      status: 'synced',
+      shopify_qty: 10,
+      odoo_qty: 10,
+      drift: 0,
+      last_synced_at: '2026-03-23T00:00:00Z',
+    }
+    expect(snap.drift).toBe(0)
+    expect(snap.shopify_qty).toBe(10)
+  })
+
+  it('should allow null for optional fields', () => {
+    const snap: InventorySnapshot = {
+      sku: 'MISSING',
+      location_id: '1',
+      status: 'failed',
+      shopify_qty: null,
+      odoo_qty: null,
+      last_error: 'Odoo product not found',
+      sync_event_id: null,
+    }
+    expect(snap.last_error).toBe('Odoo product not found')
+    expect(snap.odoo_qty).toBeNull()
+  })
+})
+
+describe('ProductMapping types', () => {
+  it('should accept all valid mapping statuses', () => {
+    const statuses: MappingStatus[] = ['mapped', 'missing_odoo', 'missing_sku', 'error', 'pending']
+    statuses.forEach(mapping_status => {
+      const m: ProductMapping = { sku: 'SKU-1', mapping_status }
+      expect(m.mapping_status).toBe(mapping_status)
+    })
+  })
+
+  it('should accept a fully mapped product', () => {
+    const m: ProductMapping = {
+      sku: 'PRESS-TEE-001',
+      shopify_inventory_item_id: '123456789',
+      odoo_product_id: 42,
+      odoo_product_name: 'Press Tee',
+      mapping_status: 'mapped',
+      last_checked_at: '2026-03-23T00:00:00Z',
+    }
+    expect(m.odoo_product_id).toBe(42)
+    expect(m.mapping_status).toBe('mapped')
+  })
+
+  it('should accept a mapping with missing Odoo side', () => {
+    const m: ProductMapping = {
+      sku: 'UNKNOWN-SKU',
+      shopify_inventory_item_id: '987',
+      odoo_product_id: null,
+      mapping_status: 'missing_odoo',
+      last_error: 'No product found with this SKU in Odoo',
+    }
+    expect(m.odoo_product_id).toBeNull()
+    expect(m.mapping_status).toBe('missing_odoo')
   })
 })

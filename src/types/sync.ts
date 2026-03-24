@@ -96,3 +96,57 @@ export type SyncStreamMessage =
   | SyncStreamStatsMessage
   | SyncStreamHeartbeatMessage
   | SyncStreamErrorMessage
+
+// --- Inventory Snapshots (per-SKU + location read model) ---
+
+export type InventorySnapshotStatus = 'synced' | 'failed' | 'pending' | 'drift'
+
+export interface InventorySnapshot {
+  id?: string
+  sku: string
+  location_id: string
+  shopify_qty?: number | null
+  odoo_qty?: number | null
+  /** Computed by DB: shopify_qty - odoo_qty. Never write this field. */
+  drift?: number | null
+  status: InventorySnapshotStatus
+  last_synced_at?: string | null
+  last_error?: string | null
+  sync_event_id?: string | null
+  created_at?: string
+  updated_at?: string
+}
+
+export interface InventoryFilter {
+  sku?: string
+  location_id?: string
+  status?: InventorySnapshotStatus
+  driftOnly?: boolean
+  limit?: number
+  offset?: number
+}
+
+// --- Product Mappings (SKU <-> Shopify inventory_item_id <-> Odoo product_id) ---
+
+export type MappingStatus = 'mapped' | 'missing_odoo' | 'missing_sku' | 'error' | 'pending'
+
+export interface ProductMapping {
+  id?: string
+  sku: string
+  shopify_inventory_item_id?: string | null
+  odoo_product_id?: number | null
+  odoo_product_name?: string | null
+  mapping_status: MappingStatus
+  last_checked_at?: string | null
+  last_error?: string | null
+  created_at?: string
+  updated_at?: string
+}
+
+export interface MappingFilter {
+  sku?: string
+  status?: MappingStatus
+  missingOnly?: boolean
+  limit?: number
+  offset?: number
+}

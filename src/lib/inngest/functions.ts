@@ -9,6 +9,8 @@ import { checkHealth as checkOdoo } from '@/lib/odoo'
 import { getFailedSyncEvents, deleteOldSyncEvents } from '@/lib/supabase/sync-events'
 import { ShopifyOrderWebhookSchema, ShopifyInventoryWebhookSchema } from '@/lib/schemas'
 import type { ShopifyOrderWebhook } from '@/types/shopify'
+import { upsertInventorySnapshot } from '@/lib/supabase/inventory-snapshots'
+import { upsertProductMapping } from '@/lib/supabase/product-mappings'
 
 // --- Shared onFailure handler ---
 async function handleFunctionFailure({ event, error }: { event: { data: Record<string, unknown> }; error: Error }) {
@@ -188,7 +190,38 @@ export const inventorySync = inngest.createFunction(
 
       const qty = inventoryData.available ?? 0
       await updateProductInventory(product.id, qty)
-      return { action: 'updated' as const, productId: product.id, quantity: qty }
+      const productName = typeof product.name === 'string' ? product.name : null
+      return { action: 'updated' as const, productId: product.id, productName, quantity: qty }
+    })
+
+    await step.run('update-read-models', async () => {
+      if (!inventoryData.sku) return
+      const locationId = String(inventoryData.location_id)
+      const now = new Date().toISOString()
+
+      await upsertProductMapping({
+        sku: inventoryData.sku,
+        shopify_inventory_item_id: String(inventoryData.inventory_item_id),
+        odoo_product_id: result.action === 'updated' ? result.productId : null,
+        odoo_product_name: result.action === 'updated' ? result.productName : null,
+        mapping_status:
+          result.action === 'updated' ? 'mapped'
+          : result.action === 'skipped' && result.reason === 'product_not_found' ? 'missing_odoo'
+          : 'pending',
+        last_checked_at: now,
+        last_error: null,
+      })
+
+      await upsertInventorySnapshot({
+        sku: inventoryData.sku,
+        location_id: locationId,
+        shopify_qty: inventoryData.available ?? 0,
+        odoo_qty: result.action === 'updated' ? (inventoryData.available ?? 0) : null,
+        status: result.action === 'updated' ? 'synced' : 'failed',
+        last_synced_at: result.action === 'updated' ? now : null,
+        sync_event_id: (syncEventId as string) || null,
+        last_error: null,
+      })
     })
 
     await step.run('log-success', async () => {
