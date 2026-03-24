@@ -11,6 +11,7 @@ import { ShopifyOrderWebhookSchema, ShopifyInventoryWebhookSchema } from '@/lib/
 import type { ShopifyOrderWebhook } from '@/types/shopify'
 import { upsertInventorySnapshot } from '@/lib/supabase/inventory-snapshots'
 import { upsertProductMapping } from '@/lib/supabase/product-mappings'
+import { fetchInventoryItemSku } from '@/lib/shopify/products'
 
 // --- Shared onFailure handler ---
 async function handleFunctionFailure({ event, error }: { event: { data: Record<string, unknown> }; error: Error }) {
@@ -178,14 +179,21 @@ export const inventorySync = inngest.createFunction(
       return ShopifyInventoryWebhookSchema.parse(event.data.inventoryData)
     })
 
+    // Shopify's inventory_levels/update webhook does not include SKU in the payload.
+    // Fetch it from the Admin API using inventory_item_id.
+    const sku = await step.run('resolve-sku', async () => {
+      if (inventoryData.sku) return inventoryData.sku
+      return fetchInventoryItemSku(inventoryData.inventory_item_id)
+    })
+
     const result = await step.run('sync-inventory', async () => {
-      if (!inventoryData.sku) {
+      if (!sku) {
         return { action: 'skipped' as const, reason: 'no_sku' }
       }
 
-      const product = await findProductBySku(inventoryData.sku)
+      const product = await findProductBySku(sku)
       if (!product || product.id === undefined) {
-        return { action: 'skipped' as const, reason: 'product_not_found', sku: inventoryData.sku }
+        return { action: 'skipped' as const, reason: 'product_not_found', sku }
       }
 
       const qty = inventoryData.available ?? 0
@@ -195,12 +203,12 @@ export const inventorySync = inngest.createFunction(
     })
 
     await step.run('update-read-models', async () => {
-      if (!inventoryData.sku) return
+      if (!sku) return
       const locationId = String(inventoryData.location_id)
       const now = new Date().toISOString()
 
       await upsertProductMapping({
-        sku: inventoryData.sku,
+        sku,
         shopify_inventory_item_id: String(inventoryData.inventory_item_id),
         odoo_product_id: result.action === 'updated' ? result.productId : null,
         odoo_product_name: result.action === 'updated' ? result.productName : null,
@@ -213,7 +221,7 @@ export const inventorySync = inngest.createFunction(
       })
 
       await upsertInventorySnapshot({
-        sku: inventoryData.sku,
+        sku,
         location_id: locationId,
         shopify_qty: inventoryData.available ?? 0,
         odoo_qty: result.action === 'updated' ? (inventoryData.available ?? 0) : null,

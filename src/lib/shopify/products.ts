@@ -1,4 +1,4 @@
-import { shopifyStorefrontFetch } from './client'
+import { shopifyStorefrontFetch, shopifyAdminFetch } from './client'
 import type { ShopifyProduct } from '@/types/shopify'
 
 interface ProductsResponse {
@@ -194,4 +194,22 @@ export async function searchProducts(searchQuery: string, first: number = 20): P
   })
 
   return data.products.edges.map(edge => edge.node)
+}
+
+/**
+ * Fetch the SKU for an inventory item via the Admin GraphQL API.
+ * Shopify's inventory_levels/update webhook only sends inventory_item_id,
+ * not the SKU — this bridges that gap.
+ */
+export async function fetchInventoryItemSku(inventoryItemId: number): Promise<string | null> {
+  const gid = `gid://shopify/InventoryItem/${inventoryItemId}`
+  const data = await shopifyAdminFetch<{ inventoryItem: { sku: string | null } | null }>(
+    `query GetInventoryItemSku($id: ID!) {
+      inventoryItem(id: $id) {
+        sku
+      }
+    }`,
+    { id: gid }
+  )
+  return data.inventoryItem?.sku ?? null
 }
