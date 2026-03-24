@@ -39,18 +39,22 @@ export function CartProvider({ children, initialCart }: { children: ReactNode; i
     setCartError(null)
     return new Promise((resolve) => {
       startTransition(async () => {
-          try {
-            const updatedCart = await addItemToCart(variantId, quantity)
-            if (updatedCart) {
-              setCart(updatedCart)
-            } else {
-              setCartError('Failed to add item to cart. Please try again.')
-            }
-            resolve(updatedCart ?? null)
-          } catch {
+        try {
+          const updatedCart = await addItemToCart(variantId, quantity)
+          if (updatedCart) {
+            setCart(updatedCart)
+          } else {
             setCartError('Failed to add item to cart. Please try again.')
-            resolve(null)
           }
+          resolve(updatedCart ?? null)
+        } catch {
+          setCartError('Failed to add item to cart. Please try again.')
+          resolve(null)
+        }
+      })
+    })
+  }, [])
+
   const updateQuantity = useCallback(async (lineId: string, quantity: number) => {
     startTransition(async () => {
       const updatedCart = await updateItemQuantity(lineId, quantity)
