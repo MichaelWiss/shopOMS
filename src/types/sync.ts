@@ -52,3 +52,47 @@ export interface SyncFilter {
   limit?: number
   offset?: number
 }
+
+export type SyncStreamMessageType =
+  | 'snapshot'
+  | 'upsert'
+  | 'stats'
+  | 'heartbeat'
+  | 'error'
+
+export interface SyncStreamSnapshotMessage {
+  type: 'snapshot'
+  at: string
+  events: SyncEvent[]
+  stats: SyncStats
+}
+
+export interface SyncStreamUpsertMessage {
+  type: 'upsert'
+  at: string
+  event: SyncEvent
+}
+
+export interface SyncStreamStatsMessage {
+  type: 'stats'
+  at: string
+  stats: SyncStats
+}
+
+export interface SyncStreamHeartbeatMessage {
+  type: 'heartbeat'
+  at: string
+}
+
+export interface SyncStreamErrorMessage {
+  type: 'error'
+  at: string
+  message: string
+}
+
+export type SyncStreamMessage =
+  | SyncStreamSnapshotMessage
+  | SyncStreamUpsertMessage
+  | SyncStreamStatsMessage
+  | SyncStreamHeartbeatMessage
+  | SyncStreamErrorMessage
