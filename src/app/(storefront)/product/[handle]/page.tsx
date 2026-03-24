@@ -1,9 +1,9 @@
 import Link from 'next/link'
 import Image from 'next/image'
 import { notFound } from 'next/navigation'
-import DOMPurify from 'isomorphic-dompurify'
 import { getProductByHandle, getProducts } from '@/lib/shopify/products'
 import { AddToCartButton } from '@/components/AddToCartButton'
+import { SanitizedHtml } from '@/components/SanitizedHtml'
 
 export const revalidate = 60
 
@@ -95,9 +95,9 @@ export default async function ProductPage({ params }: { params: Promise<{ handle
           {/* Description */}
           <div className="mt-8">
             <h3 className="text-[11px] uppercase tracking-[0.1em] text-[#1a1a1a] font-medium mb-3">Description</h3>
-            <div
+            <SanitizedHtml
+              html={product.descriptionHtml}
               className="text-[14px] text-[#666] leading-[1.7] prose prose-sm max-w-none [&_h3]:text-[11px] [&_h3]:uppercase [&_h3]:tracking-[0.1em] [&_h3]:text-[#1a1a1a] [&_h3]:font-medium [&_h3]:mt-6 [&_h3]:mb-3 [&_ul]:list-none [&_ul]:pl-0 [&_li]:text-[14px] [&_li]:text-[#666] [&_li]:leading-[1.8]"
-              dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(product.descriptionHtml) }}
             />
           </div>
 

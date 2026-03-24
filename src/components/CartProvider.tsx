@@ -1,8 +1,67 @@
 'use client'
 
 import { createContext, useContext, useState, useCallback, useTransition, useEffect, type ReactNode } from 'react'
-import { addItemToCart, updateItemQuantity, removeItem, getCurrentCart } from '@/app/actions/cart'
 import type { ShopifyCart } from '@/types/shopify'
+
+interface CartApiResponse {
+  cart: ShopifyCart | null
+}
+
+async function apiFetchCart(): Promise<ShopifyCart | null> {
+  try {
+    const res = await fetch('/api/cart')
+    if (!res.ok) return null
+    const data: CartApiResponse = await res.json()
+    return data.cart
+  } catch {
+    return null
+  }
+}
+
+async function apiAddItem(variantId: string, quantity: number): Promise<ShopifyCart | null> {
+  try {
+    const res = await fetch('/api/cart', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ variantId, quantity }),
+    })
+    if (!res.ok) return null
+    const data: CartApiResponse = await res.json()
+    return data.cart
+  } catch {
+    return null
+  }
+}
+
+async function apiUpdateQuantity(lineId: string, quantity: number): Promise<ShopifyCart | null> {
+  try {
+    const res = await fetch('/api/cart', {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ lineId, quantity }),
+    })
+    if (!res.ok) return null
+    const data: CartApiResponse = await res.json()
+    return data.cart
+  } catch {
+    return null
+  }
+}
+
+async function apiRemoveItem(lineId: string): Promise<ShopifyCart | null> {
+  try {
+    const res = await fetch('/api/cart', {
+      method: 'DELETE',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ lineId }),
+    })
+    if (!res.ok) return null
+    const data: CartApiResponse = await res.json()
+    return data.cart
+  } catch {
+    return null
+  }
+}
 
 interface CartContextValue {
   cart: ShopifyCart | null
@@ -26,7 +85,7 @@ export function CartProvider({ children, initialCart }: { children: ReactNode; i
   // Load cart on mount if not provided
   useEffect(() => {
     if (!initialCart) {
-      getCurrentCart()
+      apiFetchCart()
         .then(c => {
           setCart(c)
           setIsLoading(false)
@@ -40,7 +99,7 @@ export function CartProvider({ children, initialCart }: { children: ReactNode; i
     return new Promise((resolve) => {
       startTransition(async () => {
         try {
-          const updatedCart = await addItemToCart(variantId, quantity)
+          const updatedCart = await apiAddItem(variantId, quantity)
           if (updatedCart) {
             setCart(updatedCart)
           } else {
@@ -57,7 +116,7 @@ export function CartProvider({ children, initialCart }: { children: ReactNode; i
 
   const updateQuantity = useCallback(async (lineId: string, quantity: number) => {
     startTransition(async () => {
-      const updatedCart = await updateItemQuantity(lineId, quantity)
+      const updatedCart = await apiUpdateQuantity(lineId, quantity)
       if (updatedCart) {
         setCart(updatedCart)
       }
@@ -66,7 +125,7 @@ export function CartProvider({ children, initialCart }: { children: ReactNode; i
 
   const removeFromCart = useCallback(async (lineId: string) => {
     startTransition(async () => {
-      const updatedCart = await removeItem(lineId)
+      const updatedCart = await apiRemoveItem(lineId)
       if (updatedCart) {
         setCart(updatedCart)
       }
@@ -75,7 +134,7 @@ export function CartProvider({ children, initialCart }: { children: ReactNode; i
 
   const refreshCart = useCallback(async () => {
     setIsLoading(true)
-    const freshCart = await getCurrentCart()
+    const freshCart = await apiFetchCart()
     setCart(freshCart)
     setIsLoading(false)
   }, [])
