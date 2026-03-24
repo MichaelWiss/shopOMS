@@ -1,4 +1,8 @@
+import { getMailtoLink, siteConfig } from '@/lib/site-config'
+
 export default function ShippingPage() {
+  const { standardRate, expressRate, freeThreshold } = siteConfig.shipping
+
   return (
     <div className="px-6 py-10 bg-[#F8B4C4] min-h-screen">
       <h1 className="text-[11px] uppercase tracking-[0.08em] text-[#1a1a1a]/60 mb-16">Shipping</h1>
@@ -8,11 +12,11 @@ export default function ShippingPage() {
           <section>
             <h2 className="text-[11px] uppercase tracking-[0.08em] text-[#1a1a1a]/60 mb-4">Australia</h2>
             <p className="text-[15px] leading-[1.8] text-[#1a1a1a]/80 mb-4">
-              Standard shipping within Australia is $9.95 flat rate, or free for orders over $150.
+              Standard shipping within Australia is {siteConfig.currencySymbol}{standardRate.toFixed(2)} flat rate, or free for orders over {siteConfig.currencySymbol}{freeThreshold.toFixed(0)}.
               Delivery typically takes 3-5 business days.
             </p>
             <p className="text-[15px] leading-[1.8] text-[#1a1a1a]/80">
-              Express shipping is available for $14.95 with delivery in 1-2 business days to metro areas.
+              Express shipping is available for {siteConfig.currencySymbol}{expressRate.toFixed(2)} with delivery in 1-2 business days to metro areas.
             </p>
           </section>
 
@@ -61,7 +65,7 @@ export default function ShippingPage() {
             <h2 className="text-[11px] uppercase tracking-[0.08em] text-[#1a1a1a]/60 mb-4">Questions?</h2>
             <p className="text-[15px] leading-[1.8] text-[#1a1a1a]/80">
               Contact us at{' '}
-              <a href="mailto:hello@pressandco.com" className="underline">hello@pressandco.com</a>
+              <a href={getMailtoLink('Shipping Inquiry')} className="underline">{siteConfig.email}</a>
               {' '}for any shipping inquiries.
             </p>
           </section>

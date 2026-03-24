@@ -1,3 +1,5 @@
+import { getMailtoLink, siteConfig } from '@/lib/site-config'
+
 export default function PrivacyPage() {
   return (
     <div className="px-6 py-10 bg-[#F8B4C4] min-h-screen">
@@ -65,7 +67,7 @@ export default function PrivacyPage() {
             <p className="text-[15px] leading-[1.8] text-[#1a1a1a]/80">
               Depending on your location, you may have rights regarding your personal data, 
               including the right to access, correct, or delete your information. To exercise 
-              these rights, please contact us at hello@pressandco.com.
+              these rights, please contact us at {siteConfig.email}.
             </p>
           </section>
 
@@ -74,7 +76,7 @@ export default function PrivacyPage() {
             <p className="text-[15px] leading-[1.8] text-[#1a1a1a]/80">
               If you have questions about this privacy policy or our data practices, please 
               contact us at{' '}
-              <a href="mailto:hello@pressandco.com" className="underline">hello@pressandco.com</a>
+              <a href={getMailtoLink('Privacy Policy Inquiry')} className="underline">{siteConfig.email}</a>
             </p>
           </section>
         </div>

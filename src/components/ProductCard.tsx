@@ -1,6 +1,7 @@
 import Link from 'next/link'
 import Image from 'next/image'
 import type { ShopifyProduct } from '@/types/shopify'
+import { formatSitePrice } from '@/lib/site-config'
 
 /**
  * Shared product card component used across the storefront.
@@ -31,7 +32,7 @@ export function ProductCard({ product, description }: { product: ShopifyProduct;
       <h3 className="text-[13px] tracking-[0.01em] text-[#1a1a1a] uppercase mt-2">
         {product.title}
       </h3>
-      <p className="text-[13px] text-[#1a1a1a]">A${price.toFixed(0)}.00</p>
+      <p className="text-[13px] text-[#1a1a1a]">{formatSitePrice(price)}</p>
       {description && (
         <p className="text-[13px] text-[#1a1a1a]/60 mt-2">{description}</p>
       )}

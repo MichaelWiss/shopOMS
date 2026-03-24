@@ -1,6 +1,9 @@
 import { playfair } from '@/lib/fonts'
+import { getMailtoLink, siteConfig } from '@/lib/site-config'
 
 export default function ContactPage() {
+  const sanitizedPhone = siteConfig.phone.replace(/[^+\d]/g, '')
+
   return (
     <div className="px-6 py-10 bg-[#F8B4C4] min-h-screen">
       {/* Hero Text */}
@@ -79,34 +82,34 @@ export default function ContactPage() {
         <div className="space-y-8">
           <div>
             <h3 className="text-[11px] uppercase tracking-[0.08em] text-[#1a1a1a]/60 mb-2">Email</h3>
-            <a href="mailto:hello@pressandco.com" className="text-[15px] hover:underline">
-              hello@pressandco.com
+            <a href={getMailtoLink('General Inquiry')} className="text-[15px] hover:underline">
+              {siteConfig.email}
             </a>
           </div>
 
           <div>
             <h3 className="text-[11px] uppercase tracking-[0.08em] text-[#1a1a1a]/60 mb-2">Phone</h3>
-            <a href="tel:+61400000000" className="text-[15px]">
-              (+61) 400 000 000
+            <a href={`tel:${sanitizedPhone}`} className="text-[15px]">
+              {siteConfig.phone}
             </a>
           </div>
 
           <div>
             <h3 className="text-[11px] uppercase tracking-[0.08em] text-[#1a1a1a]/60 mb-2">Instagram</h3>
             <a 
-              href="https://instagram.com/pressandco" 
+              href={`https://instagram.com/${siteConfig.instagram.replace('@', '')}`} 
               target="_blank" 
               rel="noopener noreferrer"
               className="text-[15px] hover:underline"
             >
-              @pressandco
+              {siteConfig.instagram}
             </a>
           </div>
 
           <div>
             <h3 className="text-[11px] uppercase tracking-[0.08em] text-[#1a1a1a]/60 mb-2">Studio</h3>
             <p className="text-[15px]">
-              Melbourne, Australia<br />
+              {siteConfig.location}<br />
               <span className="text-[#1a1a1a]/60">By appointment only</span>
             </p>
           </div>

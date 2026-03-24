@@ -5,6 +5,7 @@ import Image from 'next/image'
 import { playfair } from '@/lib/fonts'
 import { useCart } from '@/components/CartProvider'
 import { Loader2 } from 'lucide-react'
+import { formatSitePrice } from '@/lib/site-config'
 
 export function CartContent() {
   const { cart, isLoading, isPending, updateQuantity, removeFromCart } = useCart()
@@ -97,7 +98,7 @@ export function CartContent() {
                 </div>
               </div>
               <div className="text-right">
-                <p className="text-[15px]">A${totalPrice.toFixed(2)}</p>
+                <p className="text-[15px]">{formatSitePrice(totalPrice)}</p>
               </div>
             </div>
           )
@@ -111,7 +112,7 @@ export function CartContent() {
         <div className="space-y-3 text-[14px]">
           <div className="flex justify-between">
             <span className="text-[#1a1a1a]/60">Subtotal</span>
-            <span>A${subtotal.toFixed(2)}</span>
+            <span>{formatSitePrice(subtotal)}</span>
           </div>
           <div className="flex justify-between">
             <span className="text-[#1a1a1a]/60">Shipping</span>
@@ -122,7 +123,7 @@ export function CartContent() {
         <div className="border-t border-[#1a1a1a]/20 mt-6 pt-6">
           <div className="flex justify-between text-[15px]">
             <span>Total</span>
-            <span>A${total.toFixed(2)}</span>
+            <span>{formatSitePrice(total)}</span>
           </div>
         </div>
 

@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { playfair } from '@/lib/fonts'
 import { Plus, Minus } from 'lucide-react'
+import { getMailtoLink } from '@/lib/site-config'
 
 const faqs = [
   {
@@ -93,7 +94,7 @@ export default function FAQPage() {
           Still have questions? We're happy to help.
         </p>
         <a 
-          href="mailto:hello@pressandco.com" 
+          href={getMailtoLink('FAQ Inquiry')} 
           className="inline-block px-6 py-3 bg-[#1a1a1a] text-white text-[11px] uppercase tracking-[0.06em]"
         >
           Contact Us

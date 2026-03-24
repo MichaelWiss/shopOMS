@@ -6,11 +6,19 @@ import { adminEnv } from '@/lib/env'
  * Middleware to protect admin routes and sensitive API endpoints.
  * 
  * - Admin pages (/admin/*) require a valid session cookie
- * - API routes (/api/sync/*, /api/health) require Bearer token or x-api-key header
+ * - API routes (/api/sync/*, /api/health) accept Bearer token, x-api-key header,
+ *   OR a valid admin session cookie (so the browser admin UI can reach SSE/fallback)
  * - Webhooks (/api/webhooks/*) are NOT protected here (HMAC verified in route)
  */
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl
+  const demoRoutesEnabled = process.env.NODE_ENV !== 'production' || process.env.NEXT_PUBLIC_ENABLE_DEMO_ROUTES === 'true'
+  const siteName = process.env.NEXT_PUBLIC_SITE_NAME ?? 'Press & Co OMS'
+
+  // --- Gate demo routes in production unless explicitly enabled ---
+  if (pathname.startsWith('/demo') && !demoRoutesEnabled) {
+    return NextResponse.redirect(new URL('/', request.url))
+  }
 
   // --- Protect API routes ---
   if (pathname.startsWith('/api/sync') || pathname === '/api/health') {
@@ -20,7 +28,19 @@ export async function middleware(request: NextRequest) {
     const token = authHeader?.startsWith('Bearer ') ? authHeader.slice(7) : null
     const providedKey = token || apiKeyHeader
 
-    if (!providedKey || !compareSecrets(providedKey, adminEnv.ADMIN_API_KEY)) {
+    // Allow header-based auth (API consumers)
+    const headerAuthed = providedKey && compareSecrets(providedKey, adminEnv.ADMIN_API_KEY)
+
+    // Allow session cookie auth (admin browser UI — needed for EventSource/fetch)
+    let sessionAuthed = false
+    if (!headerAuthed) {
+      const sessionToken = request.cookies.get('admin_session')?.value
+      if (sessionToken) {
+        sessionAuthed = await validateSession(sessionToken)
+      }
+    }
+
+    if (!headerAuthed && !sessionAuthed) {
       return NextResponse.json(
         { error: 'Unauthorized' },
         { status: 401 }
@@ -43,7 +63,7 @@ export async function middleware(request: NextRequest) {
         `<!DOCTYPE html>
 <html lang="en">
 <head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Admin Login - Press &amp; Co OMS</title>
+<title>Admin Login - ${siteName}</title>
 <style>
   body { font-family: system-ui, sans-serif; display: flex; align-items: center; justify-content: center; min-height: 100vh; margin: 0; background: #f5f5f5; }
   .login { background: white; padding: 2rem; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); max-width: 360px; width: 100%; }
@@ -57,7 +77,7 @@ export async function middleware(request: NextRequest) {
 </head>
 <body>
   <div class="login">
-    <p class="brand">Press & Co OMS</p>
+    <p class="brand">${siteName}</p>
     <h1>Admin Login</h1>
     <form id="loginForm">
       <input type="password" id="key" placeholder="Enter admin key" required autofocus />
@@ -96,6 +116,7 @@ export async function middleware(request: NextRequest) {
 
 export const config = {
   matcher: [
+    '/demo/:path*',
     '/admin/:path*',
     '/api/sync/:path*',
     '/api/health',

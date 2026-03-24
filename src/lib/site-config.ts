@@ -21,6 +21,20 @@ export const siteConfig = {
   // Currency
   currencyCode: process.env.NEXT_PUBLIC_CURRENCY_CODE ?? 'AUD',
   currencySymbol: process.env.NEXT_PUBLIC_CURRENCY_SYMBOL ?? 'A$',
+
+  // Shipping
+  shipping: {
+    standardRate: Number(process.env.NEXT_PUBLIC_SHIPPING_STANDARD_RATE ?? '9.95'),
+    expressRate: Number(process.env.NEXT_PUBLIC_SHIPPING_EXPRESS_RATE ?? '14.95'),
+    freeThreshold: Number(process.env.NEXT_PUBLIC_SHIPPING_FREE_THRESHOLD ?? '150'),
+  },
+
+  // Feature flags
+  flags: {
+    adminStubsEnabled:
+      process.env.NODE_ENV !== 'production' ||
+      process.env.NEXT_PUBLIC_ENABLE_ADMIN_STUBS === 'true',
+  },
 } as const
 
 // Helper to format prices with the configured currency

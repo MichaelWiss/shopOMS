@@ -2,6 +2,7 @@ import Link from 'next/link'
 import { playfair } from '@/lib/fonts'
 import { CartProvider } from '@/components/CartProvider'
 import { CartIcon } from '@/components/CartIcon'
+import { siteConfig } from '@/lib/site-config'
 
 export default function StorefrontLayout({
   children,
@@ -33,10 +34,10 @@ export default function StorefrontLayout({
               <div className="flex items-start gap-12">
                 <div className="hidden lg:block text-right text-[11px] text-[#666] leading-[1.8]">
                   <p>Contact:</p>
-                  <p>hello@pressandco.com</p>
-                  <p>(+61) 400 000 000</p>
+                  <p>{siteConfig.email}</p>
+                  <p>{siteConfig.phone}</p>
                   <p className="mt-3">Instagram:</p>
-                  <p>@pressandco</p>
+                  <p>{siteConfig.instagram}</p>
                 </div>
                 <CartIcon />
               </div>
@@ -89,9 +90,9 @@ export default function StorefrontLayout({
             </div>
             <div className="text-right text-[11px] text-[#999] leading-[1.8]">
               <p className="text-[#666]">Location:</p>
-              <p>Melbourne, Australia</p>
+              <p>{siteConfig.location}</p>
               <p className="text-[#666] mt-2">Est:</p>
-              <p>2024</p>
+              <p>{siteConfig.estYear}</p>
             </div>
           </div>
           <div className={`${playfair.className} text-[80px] md:text-[140px] lg:text-[180px] tracking-[-0.02em] leading-[0.9]`}>

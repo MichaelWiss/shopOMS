@@ -1,6 +1,12 @@
 import { RefreshCw, ShoppingBag } from 'lucide-react'
+import { redirect } from 'next/navigation'
+import { siteConfig } from '@/lib/site-config'
 
 export default function ProductsPage() {
+  if (!siteConfig.flags.adminStubsEnabled) {
+    redirect('/admin/sync')
+  }
+
   return (
     <div className="max-w-[1400px] mx-auto">
       <div className="flex items-center justify-between mb-6">

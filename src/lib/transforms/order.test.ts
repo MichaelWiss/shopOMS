@@ -185,9 +185,10 @@ describe('Email extraction', () => {
     expect(email).toBe('customer@example.com')
   })
 
-  it('should generate placeholder for guests', () => {
+  it('should generate fallback email for guests', () => {
     const orderNumber = '1001'
-    const email = `guest-${orderNumber}@placeholder.com`
-    expect(email).toBe('guest-1001@placeholder.com')
+    const guestEmailDomain = process.env.GUEST_ORDER_EMAIL_DOMAIN ?? 'guest-orders.invalid'
+    const email = `guest-${orderNumber}@${guestEmailDomain}`
+    expect(email).toBe('guest-1001@guest-orders.invalid')
   })
 })

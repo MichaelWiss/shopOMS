@@ -1,52 +1,94 @@
-import { CheckCircle, AlertTriangle, RefreshCw, Eye, EyeOff, ExternalLink } from 'lucide-react'
+import { CheckCircle, AlertTriangle, RefreshCw } from 'lucide-react'
 
-const connections = {
-  shopify: {
-    name: 'Shopify',
-    description: 'Storefront and Admin API',
-    status: 'connected',
-    lastChecked: '2 min ago',
-    config: {
-      store: 'press-company.myshopify.com',
-      apiVersion: '2026-01',
-      webhooks: ['orders/create', 'orders/cancelled', 'inventory_levels/update'],
-    },
-  },
-  odoo: {
-    name: 'Odoo',
-    description: 'ERP Order Management',
-    status: 'connected',
-    lastChecked: '2 min ago',
-    config: {
-      url: 'https://press-co.odoo.com',
-      database: 'press-co',
-      version: '17.0',
-    },
-  },
-  supabase: {
-    name: 'Supabase',
-    description: 'Sync Event Logging',
-    status: 'connected',
-    lastChecked: 'Real-time',
-    config: {
-      project: 'press-co-oms',
-      region: 'us-east-1',
-      tables: ['sync_events', 'order_mappings'],
-    },
-  },
-  inngest: {
-    name: 'Inngest',
-    description: 'Serverless Job Queue',
-    status: 'connected',
-    lastChecked: 'Real-time',
-    config: {
-      functions: ['order-sync', 'inventory-sync', 'fulfillment-sync'],
-      mode: 'cloud',
-    },
-  },
+type EnvRow = {
+  name: string
+  value: string
+  set: boolean
+}
+
+function isSet(value: string | undefined): boolean {
+  return Boolean(value && value.trim().length > 0)
+}
+
+function maskValue(value: string | undefined): string {
+  if (!value) return 'Not set'
+  if (value.length <= 8) return '••••••••'
+  return `${value.slice(0, 4)}••••${value.slice(-4)}`
+}
+
+function parseProjectFromSupabaseUrl(url: string | undefined): string {
+  if (!url) return 'Not configured'
+
+  try {
+    return new URL(url).host.split('.')[0] ?? 'Not configured'
+  } catch {
+    return 'Not configured'
+  }
 }
 
 export default function SettingsPage() {
+  const envRows: EnvRow[] = [
+    { name: 'SHOPIFY_STORE_DOMAIN', value: maskValue(process.env.SHOPIFY_STORE_DOMAIN), set: isSet(process.env.SHOPIFY_STORE_DOMAIN) },
+    { name: 'SHOPIFY_STOREFRONT_ACCESS_TOKEN', value: maskValue(process.env.SHOPIFY_STOREFRONT_ACCESS_TOKEN), set: isSet(process.env.SHOPIFY_STOREFRONT_ACCESS_TOKEN) },
+    { name: 'SHOPIFY_CLIENT_ID', value: maskValue(process.env.SHOPIFY_CLIENT_ID), set: isSet(process.env.SHOPIFY_CLIENT_ID) },
+    { name: 'SHOPIFY_CLIENT_SECRET', value: maskValue(process.env.SHOPIFY_CLIENT_SECRET), set: isSet(process.env.SHOPIFY_CLIENT_SECRET) },
+    { name: 'ODOO_URL', value: maskValue(process.env.ODOO_URL), set: isSet(process.env.ODOO_URL) },
+    { name: 'ODOO_DB', value: maskValue(process.env.ODOO_DB), set: isSet(process.env.ODOO_DB) },
+    { name: 'ODOO_USERNAME', value: maskValue(process.env.ODOO_USERNAME), set: isSet(process.env.ODOO_USERNAME) },
+    { name: 'ODOO_API_KEY', value: maskValue(process.env.ODOO_API_KEY), set: isSet(process.env.ODOO_API_KEY) },
+    { name: 'NEXT_PUBLIC_SUPABASE_URL', value: maskValue(process.env.NEXT_PUBLIC_SUPABASE_URL), set: isSet(process.env.NEXT_PUBLIC_SUPABASE_URL) },
+    { name: 'NEXT_PUBLIC_SUPABASE_ANON_KEY', value: maskValue(process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY), set: isSet(process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) },
+    { name: 'SUPABASE_SERVICE_ROLE_KEY', value: maskValue(process.env.SUPABASE_SERVICE_ROLE_KEY), set: isSet(process.env.SUPABASE_SERVICE_ROLE_KEY) },
+    { name: 'INNGEST_EVENT_KEY', value: maskValue(process.env.INNGEST_EVENT_KEY), set: isSet(process.env.INNGEST_EVENT_KEY) },
+    { name: 'INNGEST_SIGNING_KEY', value: maskValue(process.env.INNGEST_SIGNING_KEY), set: isSet(process.env.INNGEST_SIGNING_KEY) },
+    { name: 'ADMIN_API_KEY', value: maskValue(process.env.ADMIN_API_KEY), set: isSet(process.env.ADMIN_API_KEY) },
+  ]
+
+  const connections = {
+    shopify: {
+      name: 'Shopify',
+      description: 'Storefront and Admin API',
+      status: isSet(process.env.SHOPIFY_STORE_DOMAIN) && isSet(process.env.SHOPIFY_CLIENT_SECRET) ? 'connected' : 'disconnected',
+      lastChecked: 'Runtime config',
+      config: {
+        store: process.env.SHOPIFY_STORE_DOMAIN ?? 'Not configured',
+        apiVersion: process.env.SHOPIFY_API_VERSION ?? 'Not configured',
+        webhooks: ['orders/create', 'orders/cancelled', 'inventory_levels/update'],
+      },
+    },
+    odoo: {
+      name: 'Odoo',
+      description: 'ERP Order Management',
+      status: isSet(process.env.ODOO_URL) && isSet(process.env.ODOO_DB) ? 'connected' : 'disconnected',
+      lastChecked: 'Runtime config',
+      config: {
+        url: process.env.ODOO_URL ?? 'Not configured',
+        database: process.env.ODOO_DB ?? 'Not configured',
+        username: process.env.ODOO_USERNAME ? maskValue(process.env.ODOO_USERNAME) : 'Not configured',
+      },
+    },
+    supabase: {
+      name: 'Supabase',
+      description: 'Sync Event Logging',
+      status: isSet(process.env.NEXT_PUBLIC_SUPABASE_URL) && isSet(process.env.SUPABASE_SERVICE_ROLE_KEY) ? 'connected' : 'disconnected',
+      lastChecked: 'Runtime config',
+      config: {
+        project: parseProjectFromSupabaseUrl(process.env.NEXT_PUBLIC_SUPABASE_URL),
+        tables: ['sync_events', 'order_mappings'],
+      },
+    },
+    inngest: {
+      name: 'Inngest',
+      description: 'Serverless Job Queue',
+      status: isSet(process.env.INNGEST_EVENT_KEY) && isSet(process.env.INNGEST_SIGNING_KEY) ? 'connected' : 'disconnected',
+      lastChecked: 'Runtime config',
+      config: {
+        functions: ['order-sync', 'inventory-sync', 'fulfillment-sync'],
+        mode: 'cloud',
+      },
+    },
+  }
+
   return (
     <div className="max-w-[1000px] mx-auto">
       <div className="flex items-center justify-between mb-6">
@@ -136,22 +178,7 @@ export default function SettingsPage() {
               </tr>
             </thead>
             <tbody className="divide-y divide-[#E5E5E5]">
-              {[
-                { name: 'SHOPIFY_STORE_DOMAIN', value: '••••••••.myshopify.com', set: true },
-                { name: 'SHOPIFY_STOREFRONT_ACCESS_TOKEN', value: '••••••••••••••••', set: true },
-                { name: 'SHOPIFY_CLIENT_ID', value: '••••••••••••••••', set: true },
-                { name: 'SHOPIFY_CLIENT_SECRET', value: '••••••••••••••••', set: true },
-                { name: 'ODOO_URL', value: 'https://••••••.odoo.com', set: true },
-                { name: 'ODOO_DB', value: '••••••-prod', set: true },
-                { name: 'ODOO_USERNAME', value: '••••••@••••••.com', set: true },
-                { name: 'ODOO_API_KEY', value: '••••••••••••••••', set: true },
-                { name: 'NEXT_PUBLIC_SUPABASE_URL', value: 'https://••••••.supabase.co', set: true },
-                { name: 'NEXT_PUBLIC_SUPABASE_ANON_KEY', value: '••••••••••••••••', set: true },
-                { name: 'SUPABASE_SERVICE_ROLE_KEY', value: '••••••••••••••••', set: true },
-                { name: 'INNGEST_EVENT_KEY', value: '••••••••••••••••', set: true },
-                { name: 'INNGEST_SIGNING_KEY', value: '••••••••••••••••', set: true },
-                { name: 'ADMIN_API_KEY', value: '••••••••••••••••', set: true },
-              ].map((env) => (
+              {envRows.map((env) => (
                 <tr key={env.name} className="hover:bg-[#FAFAFA]">
                   <td className="px-4 py-3 text-[12px] font-mono text-[#1a1a1a]">{env.name}</td>
                   <td className="px-4 py-3 text-[12px] font-mono text-[#666]">{env.value}</td>
@@ -189,11 +216,9 @@ export default function SettingsPage() {
             </thead>
             <tbody className="divide-y divide-[#E5E5E5]">
               {[
-                { topic: 'orders/create', endpoint: '/api/webhooks/shopify/orders', active: true },
-                { topic: 'orders/updated', endpoint: '/api/webhooks/shopify/orders', active: true },
-                { topic: 'orders/cancelled', endpoint: '/api/webhooks/shopify/orders', active: true },
-                { topic: 'products/update', endpoint: '/api/webhooks/shopify/products', active: true },
-                { topic: 'inventory_levels/update', endpoint: '/api/webhooks/shopify/inventory', active: true },
+                { topic: 'orders/create', endpoint: '/api/webhooks/orders/create', active: true },
+                { topic: 'orders/cancelled', endpoint: '/api/webhooks/orders/cancelled', active: true },
+                { topic: 'inventory_levels/update', endpoint: '/api/webhooks/inventory/update', active: true },
               ].map((webhook) => (
                 <tr key={webhook.topic} className="hover:bg-[#FAFAFA]">
                   <td className="px-4 py-3 text-[12px] font-mono text-[#1a1a1a]">{webhook.topic}</td>

@@ -34,7 +34,8 @@ export async function transformShopifyOrderToOdoo(
       ? `${shopifyOrder.billing_address.first_name} ${shopifyOrder.billing_address.last_name}`
       : `Guest Customer #${shopifyOrder.order_number}`
 
-  const email = shopifyOrder.email || shopifyOrder.customer?.email || `guest-${shopifyOrder.order_number}@placeholder.com`
+  const guestEmailDomain = process.env.GUEST_ORDER_EMAIL_DOMAIN ?? 'guest-orders.invalid'
+  const email = shopifyOrder.email || shopifyOrder.customer?.email || `guest-${shopifyOrder.order_number}@${guestEmailDomain}`
   const shopifyCustomerId = shopifyOrder.customer?.id?.toString()
 
   // Build address data

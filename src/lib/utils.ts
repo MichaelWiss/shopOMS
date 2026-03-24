@@ -1,11 +1,12 @@
 import { clsx, type ClassValue } from 'clsx'
 import { twMerge } from 'tailwind-merge'
+import { siteConfig } from '@/lib/site-config'
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs))
 }
 
-export function formatPrice(amount: string | number, currency: string = 'USD') {
+export function formatPrice(amount: string | number, currency: string = siteConfig.currencyCode) {
   const numericAmount = typeof amount === 'string' ? parseFloat(amount) : amount
   return new Intl.NumberFormat('en-US', {
     style: 'currency',

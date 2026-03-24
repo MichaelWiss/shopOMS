@@ -1,4 +1,5 @@
 import { playfair } from '@/lib/fonts'
+import { getMailtoLink } from '@/lib/site-config'
 
 export default function CustomPage() {
   return (
@@ -71,7 +72,7 @@ export default function CustomPage() {
           Interested in discussing how custom-written cards can enhance your brand's presence?
         </p>
         <a 
-          href="mailto:hello@pressandco.com?subject=Custom Project Inquiry" 
+          href={getMailtoLink('Custom Project Inquiry')} 
           className="inline-block px-6 py-3 bg-[#1a1a1a] text-white text-[11px] uppercase tracking-[0.06em]"
         >
           Get in Touch

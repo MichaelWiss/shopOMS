@@ -9,21 +9,26 @@ import {
   ChevronRight
 } from 'lucide-react'
 import { LogoutButton } from '@/components/LogoutButton'
-
-const navItems = [
-  { href: '/admin', label: 'Dashboard', icon: LayoutDashboard },
-  { href: '/admin/orders', label: 'Orders', icon: ShoppingCart },
-  { href: '/admin/products', label: 'Products', icon: Package },
-  { href: '/admin/inventory', label: 'Inventory', icon: Warehouse },
-  { href: '/admin/sync', label: 'Sync Logs', icon: RefreshCw },
-  { href: '/admin/settings', label: 'Settings', icon: Settings },
-]
+import { siteConfig } from '@/lib/site-config'
 
 export default function AdminLayout({
   children,
 }: {
   children: React.ReactNode
 }) {
+  const navItems = [
+    { href: '/admin', label: 'Dashboard', icon: LayoutDashboard },
+    { href: '/admin/orders', label: 'Orders', icon: ShoppingCart },
+    ...(siteConfig.flags.adminStubsEnabled
+      ? [
+          { href: '/admin/products', label: 'Products', icon: Package },
+          { href: '/admin/inventory', label: 'Inventory', icon: Warehouse },
+        ]
+      : []),
+    { href: '/admin/sync', label: 'Sync Logs', icon: RefreshCw },
+    { href: '/admin/settings', label: 'Settings', icon: Settings },
+  ]
+
   return (
     <div className="min-h-screen bg-[#F5F5F5]">
       {/* Top Bar */}
@@ -45,7 +50,7 @@ export default function AdminLayout({
           </nav>
         </div>
         <div className="flex items-center gap-4">
-          <span className="text-[12px] text-[#666]">admin@pressandco.com</span>
+          <span className="text-[12px] text-[#666]">{siteConfig.email}</span>
           <Link href="/" className="text-[12px] text-[#666] hover:text-white">
             View Store →
           </Link>
