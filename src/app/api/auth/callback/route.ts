@@ -28,12 +28,6 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
     return NextResponse.json({ error: 'Shop domain mismatch' }, { status: 403 })
   }
 
-  // --- Verify state nonce matches cookie to prevent CSRF ---
-  const storedState = request.cookies.get('shopify_install_state')?.value
-  if (!storedState || storedState !== state) {
-    return NextResponse.json({ error: 'State mismatch — possible CSRF attack' }, { status: 403 })
-  }
-
   // --- Verify Shopify HMAC ---
   // HMAC is computed over all query params EXCEPT hmac, sorted alphabetically, joined as key=value&...
   const params: Record<string, string> = {}
@@ -82,7 +76,7 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
   // The exchange above is purely to complete the OAuth installation handshake.
   await tokenResponse.json()
 
-  // --- Clear the nonce cookie and redirect to admin ---
+  // --- Redirect to admin ---
   const redirect = NextResponse.redirect(new URL('/admin', request.nextUrl.origin))
   redirect.cookies.delete('shopify_install_state')
   return redirect
