@@ -16,7 +16,7 @@ config({ path: '.env.local' })
 const SHOPIFY_STORE_DOMAIN = process.env.SHOPIFY_STORE_DOMAIN!
 const SHOPIFY_CLIENT_ID = process.env.SHOPIFY_CLIENT_ID!
 const SHOPIFY_CLIENT_SECRET = process.env.SHOPIFY_CLIENT_SECRET!
-const SHOPIFY_API_VERSION = process.env.SHOPIFY_API_VERSION || '2024-01'
+const SHOPIFY_API_VERSION = process.env.SHOPIFY_API_VERSION || '2026-01'
 const WEBHOOK_BASE_URL = process.env.WEBHOOK_BASE_URL || process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'
 
 // Webhooks to register

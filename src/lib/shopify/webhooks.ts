@@ -14,7 +14,7 @@ export function verifyWebhookSignature(
 
   const body = typeof rawBody === 'string' ? rawBody : rawBody.toString('utf8')
   
-  const hmac = crypto.createHmac('sha256', shopifyEnv.SHOPIFY_CLIENT_SECRET)
+  const hmac = crypto.createHmac('sha256', shopifyEnv.SHOPIFY_WEBHOOK_SECRET)
   hmac.update(body, 'utf8')
   const computedSignature = hmac.digest('base64')
 

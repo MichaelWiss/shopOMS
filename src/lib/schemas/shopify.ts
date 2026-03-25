@@ -3,25 +3,25 @@ import { z } from 'zod'
 // --- Shared sub-schemas ---
 
 const AddressSchema = z.object({
-  first_name: z.string(),
-  last_name: z.string(),
-  address1: z.string(),
-  address2: z.string().nullable(),
-  city: z.string(),
-  province: z.string(),
-  province_code: z.string(),
-  country: z.string(),
-  country_code: z.string(),
-  zip: z.string(),
-  phone: z.string().nullable(),
+  first_name: z.string().optional().default(''),
+  last_name: z.string().optional().default(''),
+  address1: z.string().optional().default(''),
+  address2: z.string().nullable().optional(),
+  city: z.string().optional().default(''),
+  province: z.string().optional().default(''),
+  province_code: z.string().optional().default(''),
+  country: z.string().optional().default(''),
+  country_code: z.string().optional().default(''),
+  zip: z.string().optional().default(''),
+  phone: z.string().nullable().optional(),
 })
 
 const CustomerSchema = z.object({
   id: z.number(),
-  email: z.string().email(),
-  first_name: z.string(),
-  last_name: z.string(),
-  phone: z.string().nullable(),
+  email: z.string().optional().default(''),
+  first_name: z.string().optional().default(''),
+  last_name: z.string().optional().default(''),
+  phone: z.string().nullable().optional(),
 })
 
 const LineItemPropertySchema = z.object({
@@ -31,14 +31,14 @@ const LineItemPropertySchema = z.object({
 
 const OrderLineItemSchema = z.object({
   id: z.number(),
-  variant_id: z.number(),
-  product_id: z.number(),
+  variant_id: z.number().nullable().optional(),
+  product_id: z.number().nullable().optional(),
   title: z.string(),
   quantity: z.number().int().min(1),
-  sku: z.string(),
+  sku: z.string().nullable().optional().default(''),
   price: z.string(),
-  total_discount: z.string(),
-  properties: z.array(LineItemPropertySchema),
+  total_discount: z.string().optional().default('0.00'),
+  properties: z.array(LineItemPropertySchema).optional().default([]),
 })
 
 // --- Webhook payload schemas ---
@@ -67,8 +67,8 @@ export const ShopifyOrderWebhookSchema = z.object({
 export const ShopifyInventoryWebhookSchema = z.object({
   inventory_item_id: z.number(),
   location_id: z.number(),
-  available: z.number().optional(),
-  sku: z.string().optional(),
+  available: z.number().nullable().optional(),
+  sku: z.string().nullable().optional(),
   updated_at: z.string().optional(),
 })
 

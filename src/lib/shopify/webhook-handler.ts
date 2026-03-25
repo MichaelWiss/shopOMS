@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { verifyWebhookSignature, extractWebhookMetadata } from '@/lib/shopify/webhooks'
-import { createSyncEvent } from '@/lib/supabase/sync-events'
+import { createSyncEvent, updateSyncStatus } from '@/lib/supabase/sync-events'
 import { inngest } from '@/lib/inngest/client'
 import { rateLimiters, getClientIp } from '@/lib/rate-limit'
 import type { SyncEvent } from '@/types/sync'
@@ -76,11 +76,11 @@ export async function handleShopifyWebhook(request: NextRequest, config: Webhook
       })
     } catch (inngestError) {
       console.error('[Webhook] Failed to dispatch Inngest event:', inngestError)
-      await createSyncEvent({
-        ...syncEvent,
-        status: 'failed',
-        error_message: `Inngest dispatch failed: ${inngestError instanceof Error ? inngestError.message : 'Unknown error'}`,
-      }).catch(() => {}) // best-effort update
+      await updateSyncStatus(
+        syncEvent.id!,
+        'failed',
+        { error_message: `Inngest dispatch failed: ${inngestError instanceof Error ? inngestError.message : 'Unknown error'}` },
+      ).catch(() => {}) // best-effort update
       return NextResponse.json({ error: 'Failed to dispatch sync job' }, { status: 500 })
     }
 
