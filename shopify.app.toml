@@ -1,27 +1,17 @@
-# Shopify App Configuration
-# Deploy with: npx shopify app deploy
+# Learn more about configuring your app at https://shopify.dev/docs/apps/tools/cli/configuration
 
-client_id = "65aa6b5b14a7eb88a7eb5879d2743273"
+client_id = "63aa6b0b14a7eb80a7eb5879d2243273"
 name = "ShopOMS"
 application_url = "https://shop-oms.vercel.app"
-
-[access_scopes]
-scopes = "read_products,write_products,read_inventory,write_inventory,read_orders,write_orders"
-
-[auth]
-redirect_urls = ["https://shop-oms.vercel.app/api/auth/callback"]
+embedded = false
 
 [webhooks]
 api_version = "2026-01"
 
-  [[webhooks.subscriptions]]
-  topics = ["orders/create"]
-  uri = "https://shop-oms.vercel.app/api/webhooks/orders/create"
+[access_scopes]
+# Learn more at https://shopify.dev/docs/apps/tools/cli/configuration#access_scopes
+scopes = "read_inventory,read_orders,read_products,write_inventory,write_orders,write_products"
+use_legacy_install_flow = true
 
-  [[webhooks.subscriptions]]
-  topics = ["orders/cancelled"]
-  uri = "https://shop-oms.vercel.app/api/webhooks/orders/cancelled"
-
-  [[webhooks.subscriptions]]
-  topics = ["inventory_levels/update"]
-  uri = "https://shop-oms.vercel.app/api/webhooks/inventory/update"
+[auth]
+redirect_urls = [ "https://shop-oms.vercel.app/api/auth/callback" ]
