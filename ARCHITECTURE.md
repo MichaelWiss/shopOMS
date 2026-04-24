@@ -50,7 +50,7 @@ This is a serverless event-driven architecture where Next.js acts as the applica
 - Zod 3.x - Schema validation for payloads and environment configuration
 
 ### Infrastructure
-- Docker (multi-stage Node 20-alpine build) - Containerization for portable runtime
+- Docker (multi-stage Node 22-alpine build) - Containerization for portable runtime
 - Vercel - Primary application hosting and runtime platform
 - Supabase - Managed PostgreSQL and access control policies
 - Inngest Cloud + local Inngest CLI - Workflow execution in production and development
@@ -71,7 +71,7 @@ This is a serverless event-driven architecture where Next.js acts as the applica
 **Interfaces**:
 - Event: shop-oms/order.sync
 - Event: shop-oms/inventory.sync
-- Event: shop-oms/fulfillment.sync
+- Event: shop-oms/fulfillment.sync (logs against order mapping; Odoo `stock.picking` integration pending)
 - Cron: health-check (15-minute interval)
 - Cron: retention-cleanup (daily)
 

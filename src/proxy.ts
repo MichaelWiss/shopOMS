@@ -3,14 +3,15 @@ import { validateSession, compareSecrets } from '@/lib/session'
 import { adminEnv } from '@/lib/env'
 
 /**
- * Middleware to protect admin routes and sensitive API endpoints.
- * 
+ * Proxy to protect admin routes and sensitive API endpoints.
+ * (Renamed from `middleware` per Next.js 16 convention.)
+ *
  * - Admin pages (/admin/*) require a valid session cookie
  * - API routes (/api/sync/*, /api/health) accept Bearer token, x-api-key header,
  *   OR a valid admin session cookie (so the browser admin UI can reach SSE/fallback)
  * - Webhooks (/api/webhooks/*) are NOT protected here (HMAC verified in route)
  */
-export async function middleware(request: NextRequest) {
+export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl
   const demoRoutesEnabled = process.env.NODE_ENV !== 'production' || process.env.NEXT_PUBLIC_ENABLE_DEMO_ROUTES === 'true'
   const siteName = process.env.NEXT_PUBLIC_SITE_NAME ?? 'Press & Co OMS'

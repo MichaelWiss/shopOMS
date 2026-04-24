@@ -1,0 +1,52 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  ci:
+    name: Test & Build
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Test
+        run: npm run test:run
+
+      - name: Build
+        run: npm run build
+        env:
+          # Placeholder values satisfy Zod env validation at build time.
+          # Real secrets are never stored here — use repository secrets for deploy workflows.
+          SHOPIFY_STORE_DOMAIN: ci.myshopify.com
+          SHOPIFY_STOREFRONT_ACCESS_TOKEN: ci_storefront_token
+          SHOPIFY_CLIENT_ID: ci_client_id
+          SHOPIFY_CLIENT_SECRET: ci_client_secret
+          SHOPIFY_WEBHOOK_SECRET: ci_webhook_secret
+          ODOO_URL: https://ci.odoo.com
+          ODOO_DB: ci_db
+          ODOO_USERNAME: ci_user
+          ODOO_API_KEY: ci_api_key
+          NEXT_PUBLIC_SUPABASE_URL: https://ci.supabase.co
+          NEXT_PUBLIC_SUPABASE_ANON_KEY: ci_anon_key
+          SUPABASE_SERVICE_ROLE_KEY: ci_service_role_key
+          INNGEST_EVENT_KEY: ci_event_key
+          INNGEST_SIGNING_KEY: ci_signing_key
+          ADMIN_API_KEY: ci_admin_key

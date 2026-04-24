@@ -56,8 +56,8 @@ A middleware OMS connecting a headless **Shopify** storefront to **Odoo** ERP fo
 - [x] Odoo customer sync (`res.partner` — get or create)
 - [x] Odoo order cancellation
 - [x] Shopify Admin API (client credentials token with auto-refresh)
-- [ ] Inventory sync (stub — needs SKU-based product mapping)
-- [ ] Fulfillment sync (stub — needs delivery order logic)
+- [x] Inventory sync (SKU resolved via Shopify Admin API → Odoo `product.product` + inventory snapshots)
+- [ ] Fulfillment sync (logs against order mapping; Odoo `stock.picking` integration pending)
 
 ### Observability
 - [x] Sync event logging to Supabase
@@ -66,7 +66,7 @@ A middleware OMS connecting a headless **Shopify** storefront to **Odoo** ERP fo
 - [x] Monitoring cron (Inngest, every 15 min — checks Odoo + failed sync backlog)
 - [x] Alert system (console/Vercel logs + optional Slack)
 - [x] Manual retry from admin UI (single event or all failed)
-- [ ] Live sync event stream (Supabase Realtime)
+- [x] Live sync event stream via SSE (`/api/sync/stream`, with polling fallback)
 
 ## Project Structure
 
@@ -87,10 +87,19 @@ src/
 │   │   └── settings/           # API connections
 │   ├── actions/                # Server actions (cart, sync retry)
 │   └── api/
-│       ├── auth/login/         # Admin login
-│       ├── health/             # Health check
+│       ├── auth/               # Shopify OAuth + admin session
+│       │   ├── install/        # OAuth initiation
+│       │   ├── callback/       # OAuth completion
+│       │   ├── login/          # Admin password → session cookie
+│       │   └── logout/         # Session revocation
+│       ├── cart/               # Cart CRUD (Shopify Storefront API)
+│       ├── health/             # Health check (Odoo + sync stats)
 │       ├── inngest/            # Inngest serve route
-│       ├── sync/events/        # Sync events API
+│       ├── inventory/          # Inventory snapshots (admin)
+│       ├── products/mappings/  # SKU ↔ Odoo product mapping (admin)
+│       ├── sync/
+│       │   ├── events/         # Sync event log + stats (polling)
+│       │   └── stream/         # SSE live event stream
 │       └── webhooks/           # Shopify webhook handlers
 │           ├── orders/create/
 │           ├── orders/cancelled/
@@ -106,7 +115,7 @@ src/
 │   ├── inngest/                # Job queue functions
 │   └── transforms/             # Shopify → Odoo data transforms
 ├── types/                      # TypeScript types
-└── middleware.ts                # Auth protection for admin + API routes
+└── proxy.ts                    # Auth protection for admin + API routes (Next.js 16 convention)
 supabase/
 └── schema.sql                  # Database schema (sync_events, order_mappings)
 ```
@@ -114,7 +123,7 @@ supabase/
 ## Getting Started
 
 ### Prerequisites
-- Node.js 20+
+- Node.js 22+ (see `.nvmrc`)
 - Shopify store with Storefront API access
 - Odoo instance with API key
 - Supabase project
@@ -127,7 +136,7 @@ supabase/
 npm install
 
 # Copy environment variables
-
+cp .env.example .env.local
 
 # Start Next.js dev server
 npm run dev

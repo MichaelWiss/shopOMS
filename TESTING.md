@@ -6,7 +6,7 @@
 **Tools**: Vitest + Testing Library  
 **Location**: `*.test.ts` / `*.test.tsx` next to source files (pattern: `**/*.{test,spec}.{ts,tsx}`)  
 **Run**: `npm test`  
-**Coverage Target**: 80% minimum (policy target)
+**Coverage Target**: 80% (policy goal; scope: `src/lib/**` only — not yet enforced in CI)
 
 **What to test:**
 - Business logic functions
@@ -41,9 +41,9 @@ describe('calculateDiscount', () => {
 - `src/components/SyncEventsLive/SyncEventsLive.test.tsx` validates degraded polling UI and reconnect action wiring
 
 ### E2E Tests (10%)
-**Tools**: Playwright (planned)  
-**Location**: `e2e/` (planned; not present yet)  
-**Run**: `npm run test:e2e` (planned; script not present yet)
+**Tools**: Playwright (not yet installed — not in `devDependencies`)  
+**Location**: `e2e/` (not yet created)  
+**Run**: `npm run test:e2e` (script not yet configured)
 
 **What to test:**
 - Critical user flows
@@ -64,17 +64,19 @@ npm run test:run
 # Coverage report
 npm run test:coverage
 
-# Planned aliases (not yet configured)
-# npm run test:unit
+# Available aliases
+npm run test:unit       # vitest run (src/lib coverage scope)
+npm run test:watch      # vitest watch mode
+
+# Not yet configured
 # npm run test:integration
 # npm run test:e2e
-# npm run test:watch
 ```
 
 ### In CI/CD
-Tests should run automatically on every PR once a repository workflow is added under `.github/workflows/`.
+Tests run automatically on every PR and push to `main` via `.github/workflows/ci.yml`.
 
-Current status: no repository CI workflow file is present yet, so test automation is currently driven by local runs and deployment platform checks.
+The workflow runs: install → lint → `npm run test:run` → `npm run build`.
 
 ## Test Data
 **Fixtures**: `tests/fixtures/` (planned)  
@@ -89,14 +91,14 @@ Current status: no repository CI workflow file is present yet, so test automatio
 - **File system**: Use in-memory fs mocks (for example, `memfs`) when file operations are introduced
 
 ## Coverage Requirements
-- Overall: 80% minimum (policy target)
+- `src/lib/**` modules: 80% minimum (policy goal — not yet enforced in CI)
 - Critical paths (auth, webhook verification, sync orchestration): 95% target
 - New code: 90% target
 
 Current enforcement notes:
 - Coverage is generated via `npm run test:coverage` (Vitest v8 provider)
-- Current coverage scope is configured for `src/lib/**/*.ts`
-- Threshold enforcement in CI is planned
+- **Scope**: `src/lib/**/*.ts` only — API routes, components, hooks, and server actions are excluded from measurement
+- **Thresholds**: not configured in `vitest.config.ts`; CI enforcement is a planned follow-up
 
 ## Performance Testing
 **Tool**: k6 (planned)  
